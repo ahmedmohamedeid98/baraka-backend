@@ -32,10 +32,12 @@ php artisan queue:retry all          # Retry failed jobs
 
 ```
 Admin Panel (/admin)
-Phone: 01000000000
+Email: admin@eshop.com
+Password: password
 
 Vendor Panel (/vendor)  
-Phone: 01111111111
+Email: vendor@eshop.com
+Password: password
 
 API Base URL
 http://localhost:8000/api/v1

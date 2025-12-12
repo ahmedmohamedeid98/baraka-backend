@@ -84,11 +84,10 @@ php artisan db:seed
 ```
 
 This will create:
-- Admin user: `01000000000`
-- Vendor user: `01111111111`
+- Admin user (admins table): `admin@eshop.com` / Password: `password`
+- Vendor (vendors table): `vendor@eshop.com` / Password: `password`
 - Sample areas (North Sinai regions)
 - Sample categories
-- Sample vendor
 
 ### 5. Storage Setup
 
@@ -153,10 +152,12 @@ npm run dev
 ## Access Points
 
 - **Admin Panel**: http://localhost:8000/admin
-  - Login: `01000000000` (use OTP flow)
+  - Email: `admin@eshop.com`
+  - Password: `password`
   
 - **Vendor Panel**: http://localhost:8000/vendor
-  - Login: `01111111111` (use OTP flow)
+  - Email: `vendor@eshop.com`
+  - Password: `password`
   
 - **API**: http://localhost:8000/api/v1/
 

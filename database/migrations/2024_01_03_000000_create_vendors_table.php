@@ -10,7 +10,15 @@ return new class extends Migration
     {
         Schema::create('vendors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('owner_user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('owner_user_id')->nullable()->constrained('users')->onDelete('set null');
+            
+            // Authentication fields
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamp('email_verified_at')->nullable();
+            
+            // Vendor information
             $table->string('name_ar');
             $table->string('name_en')->nullable();
             $table->text('description_ar')->nullable();
@@ -20,13 +28,17 @@ return new class extends Migration
             $table->text('address')->nullable();
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
+            
+            // Status fields
             $table->boolean('is_active')->default(true);
             $table->timestamp('approved_at')->nullable();
-            $table->foreignId('approved_by')->nullable()->constrained('users');
+            $table->foreignId('approved_by')->nullable()->constrained('admins');
             $table->integer('sort_order')->default(0);
+            
             $table->timestamps();
             $table->softDeletes();
             
+            $table->index('email');
             $table->index('is_active');
             $table->index('approved_at');
             $table->index(['latitude', 'longitude']);

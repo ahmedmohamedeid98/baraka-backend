@@ -8,8 +8,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable, HasApiTokens, SoftDeletes, HasRoles;
 
@@ -74,5 +76,28 @@ class User extends Authenticatable
     public function scopeVerified($query)
     {
         return $query->whereNotNull('phone_verified_at');
+    }
+
+    /**
+     * Determine if the user can access the Filament panel
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Only vendors can access the vendor panel
+        if ($panel->getId() === 'vendor') {
+            return $this->is_active && 
+                   $this->hasRole('vendor') && 
+                   $this->vendor !== null;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the name to display in Filament
+     */
+    public function getFilamentName(): string
+    {
+        return $this->name ?? $this->phone;
     }
 }

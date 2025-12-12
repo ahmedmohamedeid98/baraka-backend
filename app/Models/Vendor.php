@@ -3,15 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
-class Vendor extends Model
+class Vendor extends Authenticatable implements FilamentUser
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Notifiable, HasRoles;
+
+    protected $guard_name = 'vendor';
 
     protected $fillable = [
         'owner_user_id',
+        'email',
+        'password',
         'name_ar',
         'name_en',
         'description_ar',
@@ -25,6 +33,12 @@ class Vendor extends Model
         'approved_at',
         'approved_by',
         'sort_order',
+        'email_verified_at',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
     protected function casts(): array
@@ -34,6 +48,8 @@ class Vendor extends Model
             'longitude' => 'float',
             'is_active' => 'boolean',
             'approved_at' => 'datetime',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
         ];
     }
 
@@ -45,7 +61,7 @@ class Vendor extends Model
 
     public function approvedBy()
     {
-        return $this->belongsTo(User::class, 'approved_by');
+        return $this->belongsTo(Admin::class, 'approved_by');
     }
 
     public function products()
@@ -69,7 +85,12 @@ class Vendor extends Model
         return $query->whereNotNull('approved_at');
     }
 
-    // Accessors
+    // Accessors & Mutators
+    public function getIsApprovedAttribute()
+    {
+        return !is_null($this->approved_at);
+    }
+
     public function getNameAttribute()
     {
         return app()->getLocale() === 'ar' ? $this->name_ar : ($this->name_en ?? $this->name_ar);
@@ -78,5 +99,26 @@ class Vendor extends Model
     public function getDescriptionAttribute()
     {
         return app()->getLocale() === 'ar' ? $this->description_ar : ($this->description_en ?? $this->description_ar);
+    }
+
+    /**
+     * Determine if the vendor can access the Filament panel
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Only allow access to vendor panel
+        if ($panel->getId() === 'vendor') {
+            return $this->is_active && $this->is_approved;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the name to display in Filament
+     */
+    public function getFilamentName(): string
+    {
+        return $this->name;
     }
 }
