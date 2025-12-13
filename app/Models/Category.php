@@ -13,11 +13,9 @@ class Category extends Model
     protected $fillable = [
         'parent_id',
         'name_ar',
-        'name_en',
         'slug',
         'image',
         'description_ar',
-        'description_en',
         'is_active',
         'sort_order',
     ];
@@ -43,6 +41,12 @@ class Category extends Model
     public function products()
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function vendors()
+    {
+        return $this->belongsToMany(Vendor::class, 'vendor_categories')
+            ->withTimestamps();
     }
 
     // Scopes

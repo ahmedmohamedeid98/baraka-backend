@@ -38,15 +38,11 @@ class CategoryResource extends Resource
                             ->nullable(),
                         
                         Forms\Components\TextInput::make('name_ar')
-                            ->label('Name (Arabic)')
+                            ->label('Name')
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('slug', Str::slug($state))),
-                        
-                        Forms\Components\TextInput::make('name_en')
-                            ->label('Name (English)')
-                            ->maxLength(255),
                         
                         Forms\Components\TextInput::make('slug')
                             ->required()
@@ -63,13 +59,10 @@ class CategoryResource extends Resource
                 Forms\Components\Section::make('Description')
                     ->schema([
                         Forms\Components\Textarea::make('description_ar')
-                            ->label('Description (Arabic)')
-                            ->rows(3),
-                        
-                        Forms\Components\Textarea::make('description_en')
-                            ->label('Description (English)')
-                            ->rows(3),
-                    ])->columns(2),
+                            ->label('Description')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                    ]),
 
                 Forms\Components\Section::make('Settings')
                     ->schema([
@@ -96,12 +89,7 @@ class CategoryResource extends Resource
                     ->circular(),
                 
                 Tables\Columns\TextColumn::make('name_ar')
-                    ->label('Name (AR)')
-                    ->searchable()
-                    ->sortable(),
-                
-                Tables\Columns\TextColumn::make('name_en')
-                    ->label('Name (EN)')
+                    ->label('Name')
                     ->searchable()
                     ->sortable(),
                 

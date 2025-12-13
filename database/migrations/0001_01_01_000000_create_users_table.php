@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name')->nullable();
-            $table->string('phone', 20)->unique();
+            $table->string('phone', 20)->nullable()->unique();
             $table->string('email')->nullable()->unique();
             $table->string('fcm_token')->nullable();
             $table->boolean('is_active')->default(true);

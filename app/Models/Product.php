@@ -14,10 +14,9 @@ class Product extends Model
         'vendor_id',
         'category_id',
         'name_ar',
-        'name_en',
         'slug',
         'description_ar',
-        'description_en',
+        'unit',
         'price',
         'compare_price',
         'stock',
@@ -61,6 +60,11 @@ class Product extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function variations()
+    {
+        return $this->hasMany(ProductVariation::class);
     }
 
     // Scopes

@@ -103,8 +103,8 @@ class RolePolicy
     /**
      * Determine whether the user can reorder.
      */
-    public function reorder(User $user): bool
+    public function reorder(Authenticatable $user): bool
     {
-        return $user->can('{{ Reorder }}');
+        return $user->can('reorder_role');
     }
 }

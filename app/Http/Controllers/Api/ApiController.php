@@ -33,12 +33,14 @@ class ApiController extends Controller
     /**
      * Paginated response
      */
-    protected function paginatedResponse($data, string $message = null)
+    protected function paginatedResponse($data, $resourceClass = null, string $message = null)
     {
+        $items = $resourceClass ? $resourceClass::collection($data) : $data->items();
+        
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $data->items(),
+            'data' => $items,
             'meta' => [
                 'current_page' => $data->currentPage(),
                 'last_page' => $data->lastPage(),

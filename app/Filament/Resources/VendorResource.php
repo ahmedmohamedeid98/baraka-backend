@@ -21,21 +21,41 @@ class VendorResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Vendor Information')
+                Forms\Components\Section::make('Account Information')
                     ->schema([
-                        Forms\Components\Select::make('owner_user_id')
-                            ->label('Owner')
-                            ->relationship('owner', 'phone')
+                        Forms\Components\TextInput::make('phone')
+                            ->label('Phone (Login)')
+                            ->tel()
                             ->required()
-                            ->searchable(),
+                            ->unique(ignoreRecord: true)
+                            ->maxLength(20)
+                            ->helperText('Used for vendor login via OTP'),
                         
+                        Forms\Components\TextInput::make('email')
+                            ->label('Email (Optional)')
+                            ->email()
+                            ->nullable()
+                            ->maxLength(255),
+                        
+                        Forms\Components\TextInput::make('password')
+                            ->label('Password')
+                            ->password()
+                            ->required(fn ($context) => $context === 'create')
+                            ->dehydrated(fn ($state) => filled($state))
+                            ->minLength(8)
+                            ->maxLength(255)
+                            ->helperText('For admin panel access only'),
+                    ])->columns(2),
+                
+                Forms\Components\Section::make('Store Information')
+                    ->schema([
                         Forms\Components\TextInput::make('name_ar')
-                            ->label('Name (Arabic)')
+                            ->label('Store Name (Arabic)')
                             ->required()
                             ->maxLength(255),
                         
                         Forms\Components\TextInput::make('name_en')
-                            ->label('Name (English)')
+                            ->label('Store Name (English)')
                             ->maxLength(255),
                         
                         Forms\Components\Textarea::make('description_ar')
@@ -52,12 +72,10 @@ class VendorResource extends Resource
                             ->disk('r2')
                             ->directory('vendors/logos')
                             ->visibility('public'),
-                        
-                        Forms\Components\TextInput::make('phone')
-                            ->label('Phone')
-                            ->tel()
-                            ->maxLength(20),
-                        
+                    ])->columns(2),
+                
+                Forms\Components\Section::make('Contact Information')
+                    ->schema([
                         Forms\Components\Textarea::make('address')
                             ->label('Address')
                             ->rows(2),
@@ -69,10 +87,17 @@ class VendorResource extends Resource
                         Forms\Components\TextInput::make('longitude')
                             ->label('Longitude')
                             ->numeric(),
-                        
+                    ])->columns(2),
+                
+                Forms\Components\Section::make('Settings')
+                    ->schema([
                         Forms\Components\Toggle::make('is_active')
                             ->label('Active')
                             ->default(true),
+                        
+                        Forms\Components\Toggle::make('is_featured')
+                            ->label('Featured')
+                            ->default(false),
                         
                         Forms\Components\TextInput::make('sort_order')
                             ->label('Sort Order')
@@ -111,16 +136,27 @@ class VendorResource extends Resource
                     ->circular(),
                 
                 Tables\Columns\TextColumn::make('name_ar')
-                    ->label('Name')
+                    ->label('Store Name')
                     ->searchable()
                     ->sortable(),
                 
-                Tables\Columns\TextColumn::make('owner.phone')
-                    ->label('Owner')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable(),
+                
+                Tables\Columns\TextColumn::make('phone')
+                    ->label('Phone')
+                    ->searchable()
+                    ->copyable(),
                 
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Active')
+                    ->boolean(),
+                
+                Tables\Columns\IconColumn::make('is_featured')
+                    ->label('Featured')
                     ->boolean(),
                 
                 Tables\Columns\IconColumn::make('approved_at')
@@ -131,7 +167,8 @@ class VendorResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')

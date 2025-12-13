@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Resources\LightProductResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ class ProductController extends ApiController
             $query->where('vendor_id', $request->vendor_id);
         }
 
-        if ($request->has('featured')) {
+        if ($request->has('featured') && $request->boolean('featured')) {
             $query->featured();
         }
 
@@ -38,7 +39,7 @@ class ProductController extends ApiController
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name_ar', 'LIKE', "%{$search}%")
-                    ->orWhere('name_en', 'LIKE', "%{$search}%");
+                    ->orWhere('description_ar', 'LIKE', "%{$search}%");
             });
         }
 
@@ -52,7 +53,7 @@ class ProductController extends ApiController
 
         $products = $query->paginate($perPage);
 
-        return $this->paginatedResponse($products);
+        return $this->paginatedResponse($products, LightProductResource::class);
     }
 
     /**
@@ -61,7 +62,7 @@ class ProductController extends ApiController
      */
     public function show($id)
     {
-        $product = Product::with(['vendor', 'category'])
+        $product = Product::with(['vendor', 'category', 'variations'])
             ->active()
             ->findOrFail($id);
 

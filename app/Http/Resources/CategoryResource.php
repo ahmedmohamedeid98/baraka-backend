@@ -11,15 +11,15 @@ class CategoryResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'name_ar' => $this->name_ar,
-            'name_en' => $this->name_en,
+            'name' => $this->name_ar,
             'slug' => $this->slug,
             'image' => $this->image,
-            'description' => $this->description,
+            'description' => $this->description_ar,
             'parent_id' => $this->parent_id,
+            'is_active' => $this->is_active,
+            'sort_order' => $this->sort_order,
             'children' => CategoryResource::collection($this->whenLoaded('children')),
-            'products' => ProductResource::collection($this->whenLoaded('products')),
+            'products_count' => $this->when(isset($this->products_count), $this->products_count),
         ];
     }
 }

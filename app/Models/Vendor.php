@@ -6,34 +6,34 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 
 class Vendor extends Authenticatable implements FilamentUser
 {
-    use HasFactory, SoftDeletes, Notifiable, HasRoles;
+    use HasFactory, SoftDeletes, Notifiable, HasApiTokens, HasRoles;
 
     protected $guard_name = 'vendor';
 
     protected $fillable = [
-        'owner_user_id',
         'email',
         'password',
         'name_ar',
-        'name_en',
         'description_ar',
-        'description_en',
         'logo',
         'phone',
         'address',
         'latitude',
         'longitude',
         'is_active',
+        'is_featured',
         'approved_at',
         'approved_by',
         'sort_order',
         'email_verified_at',
+        'fcm_token',
     ];
 
     protected $hidden = [
@@ -47,6 +47,7 @@ class Vendor extends Authenticatable implements FilamentUser
             'latitude' => 'float',
             'longitude' => 'float',
             'is_active' => 'boolean',
+            'is_featured' => 'boolean',
             'approved_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
@@ -54,11 +55,6 @@ class Vendor extends Authenticatable implements FilamentUser
     }
 
     // Relationships
-    public function owner()
-    {
-        return $this->belongsTo(User::class, 'owner_user_id');
-    }
-
     public function approvedBy()
     {
         return $this->belongsTo(Admin::class, 'approved_by');
@@ -72,6 +68,48 @@ class Vendor extends Authenticatable implements FilamentUser
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(VendorDocument::class);
+    }
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class, 'vendor_categories')
+            ->withTimestamps();
+    }
+
+    public function wallet()
+    {
+        return $this->hasOne(VendorWallet::class);
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(VendorSubscription::class);
+    }
+
+    public function activeSubscription()
+    {
+        return $this->hasOne(VendorSubscription::class)->active()->latest();
+    }
+
+    /**
+     * Get or create wallet for vendor
+     */
+    public function getOrCreateWallet(): VendorWallet
+    {
+        return $this->wallet ?? $this->wallet()->create(['balance' => 0]);
+    }
+
+    /**
+     * Check if vendor has active subscription
+     */
+    public function hasActiveSubscription(): bool
+    {
+        return $this->subscriptions()->active()->where('ends_at', '>', now())->exists();
     }
 
     // Scopes

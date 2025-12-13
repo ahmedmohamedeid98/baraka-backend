@@ -6,8 +6,12 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\VendorController;
+use App\Http\Controllers\Api\VendorCategoryController;
+use App\Http\Controllers\Api\VendorAuthController;
+use App\Http\Controllers\Api\VendorWalletController;
 use Illuminate\Support\Facades\Route;
 
 // API v1 routes
@@ -17,6 +21,12 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/request-otp', [AuthController::class, 'requestOtp']);
     Route::post('auth/verify-otp', [AuthController::class, 'verifyOtp']);
 
+    // Vendor Authentication (public)
+    Route::prefix('vendor/auth')->group(function () {
+        Route::post('request-otp', [VendorAuthController::class, 'requestOtp']);
+        Route::post('verify-otp', [VendorAuthController::class, 'verifyOtp']);
+    });
+
     // Catalog (public)
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('categories/{id}', [CategoryController::class, 'show']);
@@ -25,6 +35,9 @@ Route::prefix('v1')->group(function () {
     Route::get('vendors', [VendorController::class, 'index']);
     Route::get('vendors/{id}', [VendorController::class, 'show']);
     Route::get('vendors/{id}/products', [VendorController::class, 'products']);
+    Route::get('vendors/{id}/categories', [VendorCategoryController::class, 'index']);
+
+
 
     // Order tracking (public)
     Route::get('orders/{id}/tracking', [OrderController::class, 'tracking']);
@@ -56,6 +69,28 @@ Route::prefix('v1')->group(function () {
         Route::get('orders/{id}', [OrderController::class, 'show']);
         Route::post('checkout', [OrderController::class, 'checkout']);
         Route::post('orders/{id}/cancel', [OrderController::class, 'cancel']);
+    });
 
+    // Vendor Protected Routes (vendor auth required)
+    Route::prefix('vendor')->middleware('auth:sanctum')->group(function () {
+        Route::get('me', [VendorAuthController::class, 'me']);
+        Route::put('me', [VendorAuthController::class, 'updateProfile']);
+        Route::post('fcm-token', [VendorAuthController::class, 'updateFcmToken']);
+        Route::post('auth/logout', [VendorAuthController::class, 'logout']);
+
+        // Packages (public)
+        Route::get('packages', [PackageController::class, 'index']);
+        Route::get('packages/{id}', [PackageController::class, 'show']);
+
+        // Wallet & Subscriptions
+        Route::get('wallet', [VendorWalletController::class, 'index']);
+        Route::get('wallet/transactions', [VendorWalletController::class, 'transactions']);
+        Route::post('wallet/subscribe', [VendorWalletController::class, 'subscribe']);
+        Route::post('wallet/change-package', [VendorWalletController::class, 'changePackage']);
+        Route::get('wallet/subscriptions', [VendorWalletController::class, 'subscriptions']);
+        Route::post('wallet/subscription/toggle-auto-renew', [VendorWalletController::class, 'toggleAutoRenew']);
+        Route::post('wallet/subscription/disable-auto-renew', [VendorWalletController::class, 'disableAutoRenew']);
+        Route::post('wallet/subscription/enable-auto-renew', [VendorWalletController::class, 'enableAutoRenew']);
+        Route::post('wallet/subscription/cancel', [VendorWalletController::class, 'cancelSubscription']);
     });
 });

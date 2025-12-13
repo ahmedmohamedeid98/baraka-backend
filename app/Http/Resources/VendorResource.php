@@ -11,16 +11,16 @@ class VendorResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'name_ar' => $this->name_ar,
-            'name_en' => $this->name_en,
+            'name' => $this->name_ar,
             'description' => $this->description,
             'logo' => $this->logo,
             'phone' => $this->phone,
             'address' => $this->address,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
-            'products' => ProductResource::collection($this->whenLoaded('products')),
+            'is_featured' => $this->is_featured,
+            'active_products_count' => $this->when(isset($this->products_count), $this->products_count),
+            'categories' => LightCategoryResource::collection($this->categories),
         ];
     }
 }

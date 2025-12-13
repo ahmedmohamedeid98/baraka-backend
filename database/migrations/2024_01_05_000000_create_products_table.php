@@ -13,10 +13,9 @@ return new class extends Migration
             $table->foreignId('vendor_id')->constrained()->onDelete('cascade');
             $table->foreignId('category_id')->constrained()->onDelete('restrict');
             $table->string('name_ar');
-            $table->string('name_en')->nullable();
             $table->string('slug')->unique();
             $table->text('description_ar')->nullable();
-            $table->text('description_en')->nullable();
+            $table->string('unit')->nullable(); // e.g., kg, 500ml, piece
             $table->decimal('price', 10, 2);
             $table->decimal('compare_price', 10, 2)->nullable();
             $table->integer('stock')->default(0);

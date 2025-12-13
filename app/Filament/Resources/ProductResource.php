@@ -34,26 +34,26 @@ class ProductResource extends Resource
                             ->searchable(),
                         
                         Forms\Components\TextInput::make('name_ar')
-                            ->label('Name (Arabic)')
+                            ->label('Name')
                             ->required()
-                            ->maxLength(255),
-                        
-                        Forms\Components\TextInput::make('name_en')
-                            ->label('Name (English)')
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('slug', \Illuminate\Support\Str::slug($state))),
                         
                         Forms\Components\TextInput::make('slug')
                             ->label('Slug')
                             ->required()
                             ->unique(ignoreRecord: true),
                         
-                        Forms\Components\Textarea::make('description_ar')
-                            ->label('Description (Arabic)')
-                            ->rows(3),
+                        Forms\Components\TextInput::make('unit')
+                            ->label('Unit')
+                            ->maxLength(255)
+                            ->placeholder('e.g., كجم, قطعة, حزمة'),
                         
-                        Forms\Components\Textarea::make('description_en')
-                            ->label('Description (English)')
-                            ->rows(3),
+                        Forms\Components\Textarea::make('description_ar')
+                            ->label('Description')
+                            ->rows(3)
+                            ->columnSpanFull(),
                     ])->columns(2),
                 
                 Forms\Components\Section::make('Pricing & Stock')
@@ -62,12 +62,14 @@ class ProductResource extends Resource
                             ->label('Price')
                             ->required()
                             ->numeric()
-                            ->prefix('EGP'),
+                            ->prefix('EGP')
+                            ->step(0.01),
                         
                         Forms\Components\TextInput::make('compare_price')
                             ->label('Compare Price')
                             ->numeric()
-                            ->prefix('EGP'),
+                            ->prefix('EGP')
+                            ->step(0.01),
                         
                         Forms\Components\TextInput::make('stock')
                             ->label('Stock')
@@ -82,11 +84,60 @@ class ProductResource extends Resource
                             ->label('Product Images')
                             ->image()
                             ->multiple()
-                            ->disk('r2')
+                            ->disk('public')
                             ->directory('products')
                             ->visibility('public')
                             ->maxFiles(10),
                     ]),
+                
+                Forms\Components\Section::make('Product Variations')
+                    ->schema([
+                        Forms\Components\Repeater::make('variations')
+                            ->relationship('variations')
+                            ->schema([
+                                Forms\Components\TextInput::make('name_ar')
+                                    ->label('Variation Name')
+                                    ->required()
+                                    ->placeholder('e.g., أسود - 128GB')
+                                    ->columnSpan(2),
+                                
+                                Forms\Components\KeyValue::make('attributes')
+                                    ->label('Attributes')
+                                    ->keyLabel('Attribute Name')
+                                    ->valueLabel('Value')
+                                    ->addActionLabel('Add Attribute')
+                                    ->columnSpan(2),
+                                
+                                Forms\Components\TextInput::make('price')
+                                    ->label('Price')
+                                    ->required()
+                                    ->numeric()
+                                    ->prefix('EGP')
+                                    ->step(0.01),
+                                
+                                Forms\Components\TextInput::make('stock')
+                                    ->label('Stock')
+                                    ->required()
+                                    ->numeric()
+                                    ->default(0),
+                                
+                                Forms\Components\TextInput::make('sku')
+                                    ->label('SKU')
+                                    ->unique(ignoreRecord: true)
+                                    ->maxLength(255),
+                                
+                                Forms\Components\Toggle::make('is_active')
+                                    ->label('Active')
+                                    ->default(true),
+                            ])
+                            ->columns(4)
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['name_ar'] ?? null)
+                            ->defaultItems(0)
+                            ->addActionLabel('Add Variation'),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
                 
                 Forms\Components\Section::make('Status')
                     ->schema([

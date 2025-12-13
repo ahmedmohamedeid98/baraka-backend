@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('vendors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('owner_user_id')->nullable()->constrained('users')->onDelete('set null');
             
             // Authentication fields
             $table->string('email')->unique();
@@ -20,9 +19,7 @@ return new class extends Migration
             
             // Vendor information
             $table->string('name_ar');
-            $table->string('name_en')->nullable();
             $table->text('description_ar')->nullable();
-            $table->text('description_en')->nullable();
             $table->string('logo')->nullable();
             $table->string('phone', 20)->nullable();
             $table->text('address')->nullable();

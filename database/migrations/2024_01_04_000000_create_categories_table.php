@@ -12,11 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('parent_id')->nullable()->constrained('categories')->onDelete('cascade');
             $table->string('name_ar');
-            $table->string('name_en')->nullable();
             $table->string('slug')->unique();
             $table->string('image')->nullable();
             $table->text('description_ar')->nullable();
-            $table->text('description_en')->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('sort_order')->default(0);
             $table->timestamps();

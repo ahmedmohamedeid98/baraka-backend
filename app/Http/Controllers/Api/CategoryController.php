@@ -30,14 +30,15 @@ class CategoryController extends ApiController
     }
 
     /**
-     * Get single category with products
+     * Get single category
      * GET /api/v1/categories/{id}
      */
     public function show($id)
     {
-        $category = Category::with(['children', 'products' => function ($query) {
-            $query->active()->inStock()->take(20);
-        }])->findOrFail($id);
+        $category = Category::with('children')
+            ->withCount('products')
+            ->active()
+            ->findOrFail($id);
 
         return $this->successResponse(new CategoryResource($category));
     }

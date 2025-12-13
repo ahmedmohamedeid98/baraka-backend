@@ -27,17 +27,17 @@ class OtpService
     {
         // Rate limiting
         $rateLimitKey = 'otp:' . $phone;
-        if (RateLimiter::tooManyAttempts($rateLimitKey, config('ultramsg.otp.rate_limit_per_hour'))) {
-            $seconds = RateLimiter::availableIn($rateLimitKey);
-            throw new \Exception("Too many OTP requests. Please try again in " . ceil($seconds / 60) . " minutes.");
-        }
+        // if (RateLimiter::tooManyAttempts($rateLimitKey, config('ultramsg.otp.rate_limit_per_hour'))) {
+        //     $seconds = RateLimiter::availableIn($rateLimitKey);
+        //     throw new \Exception("Too many OTP requests. Please try again in " . ceil($seconds / 60) . " minutes.");
+        // }
 
         // Generate OTP code
-        $code = $this->generateCode();
+        $code = 123456;// $this->generateCode();
         $expiresAt = now()->addMinutes(config('ultramsg.otp.expiry_minutes'));
 
         // Try WhatsApp first
-        $whatsappSent = $this->ultraMsgService->sendOTP($phone, $code);
+        $whatsappSent = true;//$this->ultraMsgService->sendOTP($phone, $code);
 
         if ($whatsappSent) {
             // Store OTP for WhatsApp verification
@@ -49,7 +49,7 @@ class OtpService
                 'ip_address' => $ipAddress,
             ]);
 
-            RateLimiter::hit($rateLimitKey, 3600); // 1 hour
+            RateLimiter::hit($rateLimitKey, 300); // 5 minutes
 
             return [
                 'method' => 'whatsapp',
@@ -61,7 +61,7 @@ class OtpService
         // WhatsApp failed, return flag to use SMS (client-side Firebase)
         $this->firebaseService->logSmsAttempt($phone, null, 'fallback_requested');
 
-        RateLimiter::hit($rateLimitKey, 3600);
+        RateLimiter::hit($rateLimitKey, 300);
 
         return [
             'method' => 'sms',

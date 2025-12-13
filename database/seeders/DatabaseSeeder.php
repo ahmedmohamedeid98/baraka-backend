@@ -16,6 +16,9 @@ class DatabaseSeeder extends Seeder
             AreaSeeder::class,
             CategorySeeder::class,
             VendorSeeder::class,
+            ProductSeeder::class,
+            PackageSeeder::class,
+            VendorWalletSeeder::class,
         ]);
 
         echo "\n✅ Database seeding completed successfully!\n\n";
