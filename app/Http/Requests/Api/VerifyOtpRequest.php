@@ -17,6 +17,7 @@ class VerifyOtpRequest extends FormRequest
             'phone' => 'required|string',
             'code' => 'required|string|min:4|max:10',
             'method' => 'sometimes|in:whatsapp,sms',
+            'fcm_token' => 'sometimes|string|max:500',
         ];
     }
 }

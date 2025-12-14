@@ -86,6 +86,11 @@ class VendorAuthController extends ApiController
             return $this->errorResponse('Your vendor account is pending approval', 403);
         }
 
+        // Update FCM token if provided
+        if ($request->filled('fcm_token')) {
+            $vendor->update(['fcm_token' => $request->fcm_token]);
+        }
+
         // Create token
         $token = $vendor->createToken('vendor-mobile-app', ['vendor'])->plainTextToken;
 

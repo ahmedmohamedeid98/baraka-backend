@@ -15,8 +15,9 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'email' => $this->email,
             'is_active' => $this->is_active,
+            'fcm_token' => $this->fcm_token,
             'phone_verified_at' => $this->phone_verified_at?->toIso8601String(),
-            'created_at' => $this->created_at->toIso8601String(),
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

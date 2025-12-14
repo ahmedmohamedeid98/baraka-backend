@@ -58,6 +58,11 @@ class AuthController extends ApiController
         // Create or get user
         $user = $this->otpService->createOrGetUser($request->phone);
 
+        // Update FCM token if provided
+        if ($request->filled('fcm_token')) {
+            $user->update(['fcm_token' => $request->fcm_token]);
+        }
+
         // Create token
         $token = $user->createToken('mobile-app')->plainTextToken;
 

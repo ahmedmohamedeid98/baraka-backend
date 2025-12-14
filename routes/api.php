@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\SmartOrderController;
 use App\Http\Controllers\Api\VendorController;
 use App\Http\Controllers\Api\VendorCategoryController;
 use App\Http\Controllers\Api\VendorAuthController;
@@ -69,6 +70,15 @@ Route::prefix('v1')->group(function () {
         Route::get('orders/{id}', [OrderController::class, 'show']);
         Route::post('checkout', [OrderController::class, 'checkout']);
         Route::post('orders/{id}/cancel', [OrderController::class, 'cancel']);
+
+        // Smart Order (AI-powered text order parsing)
+        Route::post('smart-order/parse', [SmartOrderController::class, 'parse']);
+        Route::get('smart-order/history', [SmartOrderController::class, 'history']);
+        Route::get('smart-order/favorites', [SmartOrderController::class, 'favorites']);
+        Route::get('smart-order/{id}', [SmartOrderController::class, 'show']);
+        Route::put('smart-order/{id}', [SmartOrderController::class, 'update']);
+        Route::delete('smart-order/{id}', [SmartOrderController::class, 'destroy']);
+        Route::post('smart-order/{id}/reuse', [SmartOrderController::class, 'reuse']);
     });
 
     // Vendor Protected Routes (vendor auth required)
