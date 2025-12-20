@@ -47,7 +47,21 @@ class AddressController extends ApiController
             $request->user()->addresses()->update(['is_default' => false]);
         }
 
-        $address = $request->user()->addresses()->create($request->all());
+        $data = $request->all();
+
+        // Auto-detect area from coordinates if type is map
+        if ($request->type === 'map' && $request->latitude && $request->longitude) {
+            $detectedArea = \App\Models\Area::detectFromCoordinates(
+                $request->latitude,
+                $request->longitude
+            );
+            
+            if ($detectedArea) {
+                $data['area_id'] = $detectedArea->id;
+            }
+        }
+
+        $address = $request->user()->addresses()->create($data);
 
         return $this->successResponse(
             new AddressResource($address),
@@ -85,7 +99,21 @@ class AddressController extends ApiController
             $request->user()->addresses()->update(['is_default' => false]);
         }
 
-        $address->update($request->all());
+        $data = $request->all();
+
+        // Auto-detect area from coordinates if type is map and coordinates provided
+        if (($request->type === 'map' || $address->type === 'map') && $request->has('latitude') && $request->has('longitude')) {
+            $detectedArea = \App\Models\Area::detectFromCoordinates(
+                $request->latitude,
+                $request->longitude
+            );
+            
+            if ($detectedArea) {
+                $data['area_id'] = $detectedArea->id;
+            }
+        }
+
+        $address->update($data);
 
         return $this->successResponse(
             new AddressResource($address),

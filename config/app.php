@@ -123,4 +123,18 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Main Store Location
+    |--------------------------------------------------------------------------
+    |
+    | These coordinates represent your main store/warehouse location.
+    | They are used to calculate delivery distances for map-based addresses.
+    | Set these values in your .env file.
+    |
+    */
+
+    'main_store_latitude' => env('MAIN_STORE_LATITUDE'),
+    'main_store_longitude' => env('MAIN_STORE_LONGITUDE'),
+
 ];

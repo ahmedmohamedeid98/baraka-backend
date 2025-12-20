@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AddressController;
+use App\Http\Controllers\Api\AreaController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
@@ -38,6 +39,9 @@ Route::prefix('v1')->group(function () {
     Route::get('vendors/{id}/products', [VendorController::class, 'products']);
     Route::get('vendors/{id}/categories', [VendorCategoryController::class, 'index']);
 
+    // Areas (public)
+    Route::get('areas', [AreaController::class, 'index']);
+
 
 
     // Order tracking (public)
@@ -49,6 +53,10 @@ Route::prefix('v1')->group(function () {
         // Auth & Profile
         Route::get('me', [AuthController::class, 'me']);
         Route::put('me', [AuthController::class, 'updateProfile']);
+        Route::post('me/avatar', [AuthController::class, 'updateAvatar']);
+        Route::delete('me/avatar', [AuthController::class, 'deleteAvatar']);
+        Route::post('me/change-phone/request', [AuthController::class, 'requestPhoneChange']);
+        Route::post('me/change-phone/verify', [AuthController::class, 'verifyPhoneChange']);
         Route::post('me/fcm-token', [AuthController::class, 'updateFcmToken']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
 

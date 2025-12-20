@@ -19,6 +19,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'phone',
         'email',
+        'avatar',
         'fcm_token',
         'is_active',
         'phone_verified_at',
@@ -44,7 +45,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function addresses()
     {
-        return $this->hasMany(Address::class);
+        return $this->hasMany(Address::class)->orderBy('is_default', 'desc')->orderBy('created_at', 'desc');
     }
 
     public function orders()
