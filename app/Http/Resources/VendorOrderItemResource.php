@@ -5,8 +5,13 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class OrderItemResource extends JsonResource
+class VendorOrderItemResource extends JsonResource
 {
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
     public function toArray(Request $request): array
     {
         return [
@@ -15,6 +20,7 @@ class OrderItemResource extends JsonResource
             'variant_id' => $this->variant_id,
             'product_name' => $this->product_name,
             'variant_name' => $this->variant_name,
+            // 'product_image' => $this->product_image ? asset('storage/' . $this->product_image) : null,
             'quantity' => $this->quantity,
             'price' => (float) $this->price,
             'subtotal' => (float) $this->subtotal,
@@ -25,7 +31,8 @@ class OrderItemResource extends JsonResource
                 fn() => [
                     'id' => $this->product->id,
                     'name' => $this->product->name,
-                    'image' => $this->product->first_image ? asset('storage/' . $this->product->first_image) : null,
+                    'stock' => $this->product->stock,
+                    'image' => $this->product->image,
                 ]
             ),
             
@@ -35,16 +42,7 @@ class OrderItemResource extends JsonResource
                 fn() => [
                     'id' => $this->variant->id,
                     'name' => $this->variant->name,
-                    'price' => (float) $this->variant->price,
-                ]
-            ),
-            
-            // Include vendor details
-            'vendor' => $this->when(
-                $this->relationLoaded('vendor') && $this->vendor,
-                fn() => [
-                    'id' => $this->vendor->id,
-                    'name' => $this->vendor->name,
+                    'stock' => $this->variant->stock,
                 ]
             ),
         ];

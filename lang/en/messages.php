@@ -36,6 +36,7 @@ return [
         'cannot_cancel' => 'Order cannot be cancelled at this stage',
         'single_vendor_only' => 'Please order from one vendor at a time',
         'creation_failed' => 'Failed to create order',
+        'payment_screenshot_required' => 'Payment screenshot is required for this payment method',
     ],
     'coupon' => [
         'invalid' => 'Invalid coupon code',

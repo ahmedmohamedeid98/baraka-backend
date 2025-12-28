@@ -26,7 +26,9 @@ class Order extends Model
         'coupon_id',
         'coupon_code',
         'payment_method',
+        'payment_screenshot',
         'payment_status',
+        'payment_rejection_reason',
         'status',
         'notes',
         'cancellation_reason',
@@ -87,6 +89,11 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function vendorOrders()
+    {
+        return $this->hasMany(VendorOrder::class);
+    }
+
     public function statusHistories()
     {
         return $this->hasMany(OrderStatusHistory::class);
@@ -110,6 +117,8 @@ class Order extends Model
 
         if ($status === 'confirmed') {
             $this->confirmed_at = now();
+            // Create vendor orders when order is confirmed
+            $this->createVendorOrders();
         } elseif ($status === 'delivered') {
             $this->delivered_at = now();
             $this->payment_status = 'paid';
@@ -131,5 +140,52 @@ class Order extends Model
     public function canBeCancelled(): bool
     {
         return in_array($this->status, ['pending', 'confirmed', 'preparing']);
+    }
+
+    /**
+     * Create vendor orders from order items
+     */
+    protected function createVendorOrders(): void
+    {
+        // Check if vendor orders already exist
+        if ($this->vendorOrders()->exists()) {
+            return;
+        }
+
+        // Group items by vendor_id
+        $itemsByVendor = $this->items()->with('product')->get()->groupBy(function ($item) {
+            return $item->product->vendor_id;
+        });
+
+        foreach ($itemsByVendor as $vendorId => $vendorItems) {
+            // Calculate vendor subtotal
+            $vendorSubtotal = $vendorItems->sum('subtotal');
+
+            // Create vendor order
+            $vendorOrder = VendorOrder::create([
+                'order_id' => $this->id,
+                'order_number' => $this->order_number,
+                'vendor_id' => $vendorId,
+                'subtotal' => $vendorSubtotal,
+                'status' => 'pending',
+            ]);
+
+            // Create vendor order items
+            foreach ($vendorItems as $item) {
+                // Get product image
+                $productImage = $item->product->first_image ?? null;
+
+                $vendorOrder->items()->create([
+                    'product_id' => $item->product_id,
+                    'variant_id' => $item->variant_id,
+                    'product_name' => $item->product_name,
+                    'variant_name' => $item->variant_name,
+                    'product_image' => $productImage,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                    'subtotal' => $item->subtotal,
+                ]);
+            }
+        }
     }
 }

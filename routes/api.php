@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\VendorController;
 use App\Http\Controllers\Api\VendorCategoryController;
 use App\Http\Controllers\Api\VendorAuthController;
 use App\Http\Controllers\Api\VendorWalletController;
+use App\Http\Controllers\Api\Vendor\VendorOrderController;
 use Illuminate\Support\Facades\Route;
 
 // API v1 routes
@@ -78,6 +79,7 @@ Route::prefix('v1')->group(function () {
 
         // Cart
         Route::get('cart', [CartController::class, 'index']);
+        Route::post('cart/sync', [CartController::class, 'sync']);
         Route::post('cart/items', [CartController::class, 'store']);
         Route::put('cart/items/{id}', [CartController::class, 'update']);
         Route::delete('cart/items/{id}', [CartController::class, 'destroy']);
@@ -123,5 +125,11 @@ Route::prefix('v1')->group(function () {
         Route::post('wallet/subscription/disable-auto-renew', [VendorWalletController::class, 'disableAutoRenew']);
         Route::post('wallet/subscription/enable-auto-renew', [VendorWalletController::class, 'enableAutoRenew']);
         Route::post('wallet/subscription/cancel', [VendorWalletController::class, 'cancelSubscription']);
+
+        // Vendor Orders
+        Route::get('orders', [VendorOrderController::class, 'index']);
+        Route::get('orders/statistics', [VendorOrderController::class, 'statistics']);
+        Route::get('orders/{id}', [VendorOrderController::class, 'show']);
+        Route::put('orders/{id}/status', [VendorOrderController::class, 'updateStatus']);
     });
 });

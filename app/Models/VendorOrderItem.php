@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class OrderItem extends Model
+class VendorOrderItem extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'order_id',
+        'vendor_order_id',
         'product_id',
         'variant_id',
         'product_name',
@@ -24,36 +22,33 @@ class OrderItem extends Model
     protected function casts(): array
     {
         return [
+            'quantity' => 'integer',
             'price' => 'decimal:2',
             'subtotal' => 'decimal:2',
         ];
     }
 
-    // Relationships
-    public function order()
+    /**
+     * Get the vendor order
+     */
+    public function vendorOrder(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(VendorOrder::class);
     }
 
-    public function product()
+    /**
+     * Get the product
+     */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function variant()
+    /**
+     * Get the variant
+     */
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariation::class, 'variant_id');
-    }
-
-    public function vendor()
-    {
-        return $this->hasOneThrough(
-            Vendor::class,
-            Product::class,
-            'id',
-            'id',
-            'product_id',
-            'vendor_id'
-        );
     }
 }

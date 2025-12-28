@@ -36,6 +36,7 @@ return [
         'cannot_cancel' => 'لا يمكن إلغاء الطلب في هذه المرحلة',
         'single_vendor_only' => 'يرجى الطلب من متجر واحد في كل مرة',
         'creation_failed' => 'فشل إنشاء الطلب',
+        'payment_screenshot_required' => 'صورة إثبات الدفع مطلوبة لهذه الطريقة',
     ],
     'coupon' => [
         'invalid' => 'كود الخصم غير صالح',

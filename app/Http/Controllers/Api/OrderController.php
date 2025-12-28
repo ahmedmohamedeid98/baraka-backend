@@ -4,14 +4,24 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\OrderResource;
 use App\Jobs\SendOrderNotification;
+use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Coupon;
 use App\Models\Order;
+use App\Models\PaymentMethod;
+use App\Services\OrderCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class OrderController extends ApiController
 {
+    protected OrderCalculationService $orderCalculation;
+
+    public function __construct(OrderCalculationService $orderCalculation)
+    {
+        $this->orderCalculation = $orderCalculation;
+    }
     /**
      * Get user orders
      * GET /api/v1/orders
@@ -22,11 +32,10 @@ class OrderController extends ApiController
 
         $orders = $request->user()
             ->orders()
-            ->with(['vendor', 'items'])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
-        return $this->paginatedResponse($orders);
+        return $this->paginatedResponse(OrderResource::collection($orders));
     }
 
     /**
@@ -37,7 +46,7 @@ class OrderController extends ApiController
     {
         $order = $request->user()
             ->orders()
-            ->with(['vendor', 'items.product', 'statusHistories'])
+            ->with(['items.product', 'items.variant', 'items.vendor', 'statusHistories'])
             ->findOrFail($id);
 
         return $this->successResponse(new OrderResource($order));
@@ -50,103 +59,121 @@ class OrderController extends ApiController
     public function checkout(Request $request)
     {
         $request->validate([
-            'address_id' => 'required|exists:addresses,id',
+            'payment_method_id' => 'required|exists:payment_methods,id',
+            'delivery_address_id' => 'required|exists:addresses,id',
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|integer',
+            'items.*.variant_id' => 'nullable|integer',
+            'items.*.quantity' => 'required|integer|min:1',
             'coupon_code' => 'nullable|string',
             'notes' => 'nullable|string|max:1000',
+            'payment_screenshot' => 'nullable|string', // base64 image
         ]);
 
         try {
             return DB::transaction(function () use ($request) {
                 $user = $request->user();
-                $cart = Cart::where('user_id', $user->id)->with('items.product.vendor')->first();
+                $address = $user->addresses()->findOrFail($request->delivery_address_id);
+                
+                // Get area for delivery fee
+                $areaId = $address->area_id ?? null;
 
-                if (!$cart || $cart->items->isEmpty()) {
+                // Backend recalculates everything - never trust mobile data
+                $calculation = $this->orderCalculation->calculateOrder(
+                    $request->items,
+                    $request->coupon_code,
+                    $areaId
+                );
+
+                if (empty($calculation['items'])) {
                     return $this->errorResponse(__('messages.cart.empty'));
                 }
 
-                // Group cart items by vendor
-                $itemsByVendor = $cart->items->groupBy('product.vendor_id');
-
-                if ($itemsByVendor->count() > 1) {
-                    return $this->errorResponse(__('messages.order.single_vendor_only'));
+                // Validate payment method
+                $paymentMethod = PaymentMethod::active()->findOrFail($request->payment_method_id);
+                
+                // Check if payment screenshot is required
+                if ($paymentMethod->required_transaction_screenshot && !$request->payment_screenshot) {
+                    return $this->errorResponse(__('messages.order.payment_screenshot_required'));
                 }
 
-                $address = $user->addresses()->findOrFail($request->address_id);
-                $vendorId = $itemsByVendor->keys()->first();
-                $items = $itemsByVendor->first();
-
-                // Calculate subtotal
-                $subtotal = $items->sum(function ($item) {
-                    return $item->price * $item->quantity;
-                });
-
-                // Delivery fee
-                $deliveryFee = $address->type === 'manual' && $address->area
-                    ? $address->area->delivery_fee
-                    : 0;
-
-                // Apply coupon
-                $discount = 0;
-                $coupon = null;
-                if ($request->coupon_code) {
-                    $coupon = Coupon::where('code', $request->coupon_code)->active()->first();
-                    
-                    if (!$coupon) {
-                        return $this->errorResponse(__('messages.coupon.invalid'));
-                    }
-
-                    if (!$coupon->canBeUsedByUser($user)) {
-                        return $this->errorResponse(__('messages.coupon.cannot_be_used'));
-                    }
-
-                    $discount = $coupon->calculateDiscount($subtotal);
+                // Store payment screenshot if provided
+                $paymentScreenshotPath = null;
+                if ($request->payment_screenshot) {
+                    $paymentScreenshotPath = $this->savePaymentScreenshot($request->payment_screenshot, $user->id);
                 }
 
-                $total = $subtotal + $deliveryFee - $discount;
+                // Apply payment method discount
+                $paymentDiscount = 0;
+                if ($paymentMethod->discount_amount > 0) {
+                    if ($paymentMethod->discount_type === 'percentage') {
+                        $paymentDiscount = ($calculation['order_details']['subtotal'] * $paymentMethod->discount_amount) / 100;
+                    } else {
+                        $paymentDiscount = $paymentMethod->discount_amount;
+                    }
+                }
+
+                // Recalculate total with payment discount
+                $finalTotal = $calculation['order_details']['total'] - $paymentDiscount;
+                $finalTotal = max(0, $finalTotal);
 
                 // Create order
                 $order = Order::create([
                     'user_id' => $user->id,
-                    'vendor_id' => $vendorId,
+                    'vendor_id' => null, // Multi-vendor orders don't belong to single vendor
                     'address_id' => $address->id,
+                    'status' => 'pending',
                     'delivery_address' => $address->full_address,
                     'delivery_latitude' => $address->latitude,
                     'delivery_longitude' => $address->longitude,
-                    'subtotal' => $subtotal,
-                    'delivery_fee' => $deliveryFee,
-                    'discount' => $discount,
-                    'total' => $total,
-                    'coupon_id' => $coupon?->id,
-                    'coupon_code' => $coupon?->code,
-                    'payment_method' => 'cod',
+                    'subtotal' => $calculation['order_details']['subtotal'],
+                    'delivery_fee' => $calculation['order_details']['delivery_fee'],
+                    'discount' => $calculation['order_details']['discount'] + $paymentDiscount,
+                    'total' => $finalTotal,
+                    'coupon_id' => $calculation['coupon_id'],
+                    'coupon_code' => $request->coupon_code,
+                    'payment_method' => $paymentMethod->code,
+                    'payment_screenshot' => $paymentScreenshotPath,
+                    'payment_status' => $paymentScreenshotPath ? 'pending_verification' : 'pending',
                     'notes' => $request->notes,
                 ]);
 
                 // Create order items
-                foreach ($items as $cartItem) {
+                foreach ($calculation['items'] as $item) {
                     $order->items()->create([
-                        'product_id' => $cartItem->product_id,
-                        'product_name' => $cartItem->product->name,
-                        'product_image' => $cartItem->product->first_image,
-                        'quantity' => $cartItem->quantity,
-                        'price' => $cartItem->price,
-                        'subtotal' => $cartItem->price * $cartItem->quantity,
+                        'product_id' => $item['product_id'],
+                        'variant_id' => $item['variant_id'],
+                        'product_name' => $item['product_name'],
+                        'variant_name' => $item['variant_name'],
+                        'quantity' => $item['quantity'],
+                        'price' => $item['price'],
+                        'subtotal' => $item['total'],
                     ]);
 
                     // Decrement stock
-                    $cartItem->product->decrementStock($cartItem->quantity);
+                    if ($item['variant_id']) {
+                        $variant = \App\Models\ProductVariation::find($item['variant_id']);
+                        $variant?->decrement('stock', $item['quantity']);
+                    } else {
+                        $product = \App\Models\Product::find($item['product_id']);
+                        $product?->decrement('stock', $item['quantity']);
+                    }
                 }
 
                 // Update coupon usage
-                if ($coupon) {
-                    $coupon->increment('usage_count');
-                    $coupon->users()->syncWithoutDetaching([
-                        $user->id => ['usage_count' => DB::raw('usage_count + 1')]
-                    ]);
+                if ($calculation['coupon_id']) {
+                    $coupon = Coupon::find($calculation['coupon_id']);
+                    if ($coupon) {
+                        $coupon->increment('usage_count');
+                        $coupon->users()->syncWithoutDetaching([
+                            $user->id => ['usage_count' => DB::raw('usage_count + 1')]
+                        ]);
+                    }
                 }
 
                 // Clear cart
-                $cart->clear();
+                $cart = Cart::where('user_id', $user->id)->first();
+                $cart?->clear();
 
                 // Create status history
                 $order->statusHistories()->create([
@@ -157,16 +184,44 @@ class OrderController extends ApiController
                 // Dispatch notification job
                 dispatch(new SendOrderNotification($order));
 
-                return $this->successResponse(
-                    new OrderResource($order->load(['vendor', 'items'])),
-                    __('messages.order.created_successfully'),
-                    201
-                );
+                return $this->successResponse([
+                    'order_id' => $order->id,
+                    'status' => $order->status,
+                    'order_details' => [
+                        'subtotal' => (float) $order->subtotal,
+                        'delivery_fee' => (float) $order->delivery_fee,
+                        'discount' => (float) $order->discount,
+                        'total' => (float) $order->total,
+                    ],
+                ], __('messages.order.created_successfully'), 201);
             });
 
         } catch (\Exception $e) {
             return $this->errorResponse(__('messages.order.creation_failed') . ': ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Save payment screenshot to storage
+     * 
+     * @param string $base64Image
+     * @param int $userId
+     * @return string
+     */
+    protected function savePaymentScreenshot(string $base64Image, int $userId): string
+    {
+        // Remove base64 header if present
+        if (strpos($base64Image, 'data:image') === 0) {
+            $base64Image = preg_replace('/^data:image\/\w+;base64,/', '', $base64Image);
+        }
+
+        $imageData = base64_decode($base64Image);
+        $filename = 'payment_' . $userId . '_' . time() . '.jpg';
+        $path = 'payment_screenshots/' . $filename;
+
+        Storage::disk('public')->put($path, $imageData);
+
+        return $path;
     }
 
     /**
@@ -197,7 +252,7 @@ class OrderController extends ApiController
         }
 
         return $this->successResponse(
-            new OrderResource($order->load(['vendor', 'items'])),
+            new OrderResource($order->load(['vendorOrders.vendor', 'items'])),
             __('messages.order.cancelled_successfully')
         );
     }

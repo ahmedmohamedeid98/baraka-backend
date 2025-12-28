@@ -59,6 +59,21 @@ class Coupon extends Model
             });
     }
 
+    public function scopeValid($query)
+    {
+        return $query->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('usage_limit')
+                    ->orWhereRaw('usage_count < usage_limit');
+            });
+    }
+
     // Methods
     public function isValid(): bool
     {

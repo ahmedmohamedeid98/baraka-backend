@@ -17,11 +17,13 @@ class Transaction extends Model
 
     protected $fillable = [
         'vendor_wallet_id',
+        'vendor_id',
         'type',
         'amount',
         'balance_after',
         'description',
         'order_id',
+        'vendor_order_id',
         'subscription_id',
         'created_by',
     ];
@@ -43,6 +45,16 @@ class Transaction extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function vendorOrder()
+    {
+        return $this->belongsTo(VendorOrder::class);
+    }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class);
     }
 
     public function subscription()

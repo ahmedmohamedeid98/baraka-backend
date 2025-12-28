@@ -5,10 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\CartResource;
 use App\Models\Cart;
 use App\Models\Product;
+use App\Services\OrderCalculationService;
 use Illuminate\Http\Request;
 
 class CartController extends ApiController
 {
+    protected OrderCalculationService $orderCalculation;
+
+    public function __construct(OrderCalculationService $orderCalculation)
+    {
+        $this->orderCalculation = $orderCalculation;
+    }
     /**
      * Get user cart
      * GET /api/v1/cart
@@ -102,6 +109,34 @@ class CartController extends ApiController
         $cart->clear();
 
         return $this->successResponse(null, __('messages.cart.cleared'));
+    }
+
+    /**
+     * Sync cart - backend recalculates everything
+     * POST /api/v1/cart/sync
+     */
+    public function sync(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|integer',
+            'items.*.variant_id' => 'nullable|integer',
+            'items.*.quantity' => 'required|integer|min:1',
+            'coupon_code' => 'nullable|string',
+            'area_id' => 'nullable|integer|exists:areas,id',
+        ]);
+
+        // Backend calculates everything - never trust mobile data
+        $result = $this->orderCalculation->calculateOrder(
+            $request->items,
+            $request->coupon_code,
+            $request->area_id
+        );
+
+        return $this->successResponse([
+            'items' => $result['items'],
+            'order_details' => $result['order_details'],
+        ]);
     }
 
     /**
