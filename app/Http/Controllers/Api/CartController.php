@@ -36,7 +36,7 @@ class CartController extends ApiController
         $quantity = $request->get('quantity', 1);
 
         if ($product->stock < $quantity) {
-            return $this->errorResponse('Insufficient stock');
+            return $this->errorResponse(__('messages.cart.insufficient_stock'));
         }
 
         $cart = $this->getOrCreateCart($request);
@@ -46,7 +46,7 @@ class CartController extends ApiController
 
         return $this->successResponse(
             new CartResource($cart),
-            'Product added to cart'
+            __('messages.cart.item_added')
         );
     }
 
@@ -64,7 +64,7 @@ class CartController extends ApiController
         $item = $cart->items()->findOrFail($itemId);
 
         if ($item->product->stock < $request->quantity) {
-            return $this->errorResponse('Insufficient stock');
+            return $this->errorResponse(__('messages.cart.insufficient_stock'));
         }
 
         $cart->updateItemQuantity($itemId, $request->quantity);
@@ -72,7 +72,7 @@ class CartController extends ApiController
 
         return $this->successResponse(
             new CartResource($cart),
-            'Cart updated'
+            __('messages.cart.item_updated')
         );
     }
 
@@ -88,7 +88,7 @@ class CartController extends ApiController
 
         return $this->successResponse(
             new CartResource($cart),
-            'Item removed from cart'
+            __('messages.cart.item_removed')
         );
     }
 
@@ -101,7 +101,7 @@ class CartController extends ApiController
         $cart = $this->getOrCreateCart($request);
         $cart->clear();
 
-        return $this->successResponse(null, 'Cart cleared');
+        return $this->successResponse(null, __('messages.cart.cleared'));
     }
 
     /**

@@ -5,6 +5,11 @@
 http://localhost:8000/api/v1
 ```
 
+## API Documentation Files
+
+- **[Favorites API](FAVORITES_API.md)** - Complete documentation for managing user's favorite products
+- **[Localization Guide](LOCALIZATION.md)** - Guide for using Arabic/English translations
+
 ## Authentication
 
 All authenticated endpoints require a Bearer token in the Authorization header:

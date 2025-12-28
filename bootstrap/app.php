@@ -12,7 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->api(prepend: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
+        
+        // Register optional auth middleware alias
+        $middleware->alias([
+            'optional.auth' => \App\Http\Middleware\OptionalAuth::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

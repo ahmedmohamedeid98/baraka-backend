@@ -23,7 +23,7 @@ return [
     */
 
     'otp' => [
-        'length' => env('OTP_LENGTH', 6),
+        'length' => env('OTP_LENGTH', 4),
         'expiry_minutes' => env('OTP_EXPIRY_MINUTES', 5),
         'rate_limit_per_hour' => env('OTP_RATE_LIMIT_PER_HOUR', 3),
     ],

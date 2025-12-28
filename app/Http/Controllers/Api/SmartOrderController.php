@@ -45,7 +45,7 @@ class SmartOrderController extends ApiController
             ], 'تم تحليل الطلب وحفظه بنجاح');
         }
 
-        return $this->successResponse($result, 'تم تحليل الطلب بنجاح');
+        return $this->successResponse($result, __('messages.smart_order.analyzed_successfully'));
     }
 
     /**
@@ -109,7 +109,7 @@ class SmartOrderController extends ApiController
 
         $order->update($request->only(['name', 'is_favorite']));
 
-        return $this->successResponse($order, 'تم تحديث الطلب بنجاح');
+        return $this->successResponse($order, __('messages.smart_order.updated_successfully'));
     }
 
     /**
@@ -123,7 +123,7 @@ class SmartOrderController extends ApiController
 
         $order->delete();
 
-        return $this->successResponse(null, 'تم حذف الطلب بنجاح');
+        return $this->successResponse(null, __('messages.smart_order.deleted_successfully'));
     }
 
     /**
@@ -138,7 +138,7 @@ class SmartOrderController extends ApiController
         // Re-parse to get fresh prices and availability
         $result = $this->smartOrderService->parseTextOrder($order->original_text);
 
-        return $this->successResponse($result, 'تم استرجاع الطلب بنجاح');
+        return $this->successResponse($result, __('messages.smart_order.retrieved_successfully'));
     }
 
     /**

@@ -42,12 +42,15 @@ class AddressController extends ApiController
 
         $request->validate($rules);
 
+        $data = $request->all();
+        
         // If set as default, unset other defaults
         if ($request->is_default) {
             $request->user()->addresses()->update(['is_default' => false]);
+        } elseif (!$request->has('is_default') && $request->user()->addresses()->count() === 0) {
+            // If this is the first address and is_default not specified, make it default
+            $data['is_default'] = true;
         }
-
-        $data = $request->all();
 
         // Auto-detect area from coordinates if type is map
         if ($request->type === 'map' && $request->latitude && $request->longitude) {
@@ -65,7 +68,7 @@ class AddressController extends ApiController
 
         return $this->successResponse(
             new AddressResource($address),
-            'Address created successfully',
+            __('messages.address.created_successfully'),
             201
         );
     }
@@ -95,11 +98,12 @@ class AddressController extends ApiController
 
         $request->validate($rules);
 
-        if ($request->is_default) {
-            $request->user()->addresses()->update(['is_default' => false]);
-        }
-
         $data = $request->all();
+        
+        // If set as default, unset other defaults (excluding current address)
+        if ($request->is_default) {
+            $request->user()->addresses()->where('id', '!=', $address->id)->update(['is_default' => false]);
+        }
 
         // Auto-detect area from coordinates if type is map and coordinates provided
         if (($request->type === 'map' || $address->type === 'map') && $request->has('latitude') && $request->has('longitude')) {
@@ -117,7 +121,7 @@ class AddressController extends ApiController
 
         return $this->successResponse(
             new AddressResource($address),
-            'Address updated successfully'
+            __('messages.address.updated_successfully')
         );
     }
 
@@ -130,6 +134,6 @@ class AddressController extends ApiController
         $address = $request->user()->addresses()->findOrFail($id);
         $address->delete();
 
-        return $this->successResponse(null, 'Address deleted successfully');
+        return $this->successResponse(null, __('messages.address.deleted_successfully'));
     }
 }

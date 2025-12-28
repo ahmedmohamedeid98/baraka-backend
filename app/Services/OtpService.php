@@ -33,7 +33,7 @@ class OtpService
         // }
 
         // Generate OTP code
-        $code = 123456;// $this->generateCode();
+        $code = 1234;// $this->generateCode();
         $expiresAt = now()->addMinutes(config('ultramsg.otp.expiry_minutes'));
 
         // Try WhatsApp first
@@ -139,7 +139,7 @@ class OtpService
      */
     protected function generateCode(): string
     {
-        $length = config('ultramsg.otp.length', 6);
+        $length = config('ultramsg.otp.length', 4);
         return str_pad(random_int(0, pow(10, $length) - 1), $length, '0', STR_PAD_LEFT);
     }
 

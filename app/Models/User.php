@@ -68,6 +68,16 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Notification::class);
     }
 
+    public function favorites()
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    public function favoriteProducts()
+    {
+        return $this->belongsToMany(Product::class, 'favorites')->withTimestamps();
+    }
+
     // Scopes
     public function scopeActive($query)
     {

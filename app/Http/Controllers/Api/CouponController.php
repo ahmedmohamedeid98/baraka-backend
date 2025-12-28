@@ -21,21 +21,21 @@ class CouponController extends ApiController
         $coupon = Coupon::where('code', $request->code)->active()->first();
 
         if (!$coupon) {
-            return $this->errorResponse('Invalid coupon code');
+            return $this->errorResponse(__('messages.coupon.invalid'));
         }
 
         if (!$coupon->isValid()) {
-            return $this->errorResponse('Coupon is not valid or has expired');
+            return $this->errorResponse(__('messages.coupon.expired'));
         }
 
         if (!$coupon->canBeUsedByUser($request->user())) {
-            return $this->errorResponse('You have reached the usage limit for this coupon');
+            return $this->errorResponse(__('messages.coupon.usage_limit_reached'));
         }
 
         $discount = $coupon->calculateDiscount($request->subtotal);
 
         if ($discount == 0) {
-            return $this->errorResponse('Minimum order amount not met');
+            return $this->errorResponse(__('messages.coupon.minimum_not_met'));
         }
 
         return $this->successResponse([

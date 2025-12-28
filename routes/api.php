@@ -6,8 +6,10 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CouponController;
+use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PackageController;
+use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SmartOrderController;
 use App\Http\Controllers\Api\VendorController;
@@ -29,20 +31,23 @@ Route::prefix('v1')->group(function () {
         Route::post('verify-otp', [VendorAuthController::class, 'verifyOtp']);
     });
 
-    // Catalog (public)
-    Route::get('categories', [CategoryController::class, 'index']);
-    Route::get('categories/{id}', [CategoryController::class, 'show']);
-    Route::get('products', [ProductController::class, 'index']);
-    Route::get('products/{id}', [ProductController::class, 'show']);
-    Route::get('vendors', [VendorController::class, 'index']);
-    Route::get('vendors/{id}', [VendorController::class, 'show']);
-    Route::get('vendors/{id}/products', [VendorController::class, 'products']);
-    Route::get('vendors/{id}/categories', [VendorCategoryController::class, 'index']);
+    // Catalog (public with optional auth for personalized features)
+    Route::middleware('optional.auth')->group(function () {
+        Route::get('categories', [CategoryController::class, 'index']);
+        Route::get('categories/{id}', [CategoryController::class, 'show']);
+        Route::get('products', [ProductController::class, 'index']);
+        Route::get('products/{id}', [ProductController::class, 'show']);
+        Route::get('vendors', [VendorController::class, 'index']);
+        Route::get('vendors/{id}', [VendorController::class, 'show']);
+        Route::get('vendors/{id}/products', [VendorController::class, 'products']);
+        Route::get('vendors/{id}/categories', [VendorCategoryController::class, 'index']);
+    });
 
     // Areas (public)
     Route::get('areas', [AreaController::class, 'index']);
 
-
+    // Payment Methods (public)
+    Route::get('payment-methods', [PaymentMethodController::class, 'index']);
 
     // Order tracking (public)
     Route::get('orders/{id}/tracking', [OrderController::class, 'tracking']);
@@ -62,6 +67,14 @@ Route::prefix('v1')->group(function () {
 
         // Addresses
         Route::apiResource('addresses', AddressController::class);
+
+        // Favorites
+        Route::get('favorites', [FavoriteController::class, 'index']);
+        Route::post('favorites', [FavoriteController::class, 'store']);
+        Route::delete('favorites', [FavoriteController::class, 'clearAll']);
+        Route::delete('favorites/{product_id}', [FavoriteController::class, 'destroy']);
+        Route::post('favorites/toggle', [FavoriteController::class, 'toggle']);
+        Route::get('favorites/check/{product_id}', [FavoriteController::class, 'check']);
 
         // Cart
         Route::get('cart', [CartController::class, 'index']);

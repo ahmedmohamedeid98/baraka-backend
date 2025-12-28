@@ -68,7 +68,7 @@ class VendorAuthController extends ApiController
         );
 
         if (!$verified) {
-            return $this->errorResponse('Invalid or expired OTP code', 400);
+            return $this->errorResponse(__('messages.otp.invalid_or_expired'), 400);
         }
 
         // Get vendor

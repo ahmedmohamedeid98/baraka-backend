@@ -61,14 +61,14 @@ class OrderController extends ApiController
                 $cart = Cart::where('user_id', $user->id)->with('items.product.vendor')->first();
 
                 if (!$cart || $cart->items->isEmpty()) {
-                    return $this->errorResponse('Cart is empty');
+                    return $this->errorResponse(__('messages.cart.empty'));
                 }
 
                 // Group cart items by vendor
                 $itemsByVendor = $cart->items->groupBy('product.vendor_id');
 
                 if ($itemsByVendor->count() > 1) {
-                    return $this->errorResponse('Please order from one vendor at a time');
+                    return $this->errorResponse(__('messages.order.single_vendor_only'));
                 }
 
                 $address = $user->addresses()->findOrFail($request->address_id);
@@ -92,11 +92,11 @@ class OrderController extends ApiController
                     $coupon = Coupon::where('code', $request->coupon_code)->active()->first();
                     
                     if (!$coupon) {
-                        return $this->errorResponse('Invalid coupon code');
+                        return $this->errorResponse(__('messages.coupon.invalid'));
                     }
 
                     if (!$coupon->canBeUsedByUser($user)) {
-                        return $this->errorResponse('Coupon cannot be used');
+                        return $this->errorResponse(__('messages.coupon.cannot_be_used'));
                     }
 
                     $discount = $coupon->calculateDiscount($subtotal);
@@ -159,13 +159,13 @@ class OrderController extends ApiController
 
                 return $this->successResponse(
                     new OrderResource($order->load(['vendor', 'items'])),
-                    'Order placed successfully',
+                    __('messages.order.created_successfully'),
                     201
                 );
             });
 
         } catch (\Exception $e) {
-            return $this->errorResponse('Failed to create order: ' . $e->getMessage(), 500);
+            return $this->errorResponse(__('messages.order.creation_failed') . ': ' . $e->getMessage(), 500);
         }
     }
 
@@ -182,7 +182,7 @@ class OrderController extends ApiController
         $order = $request->user()->orders()->findOrFail($id);
 
         if (!$order->canBeCancelled()) {
-            return $this->errorResponse('Order cannot be cancelled at this stage');
+            return $this->errorResponse(__('messages.order.cannot_cancel'));
         }
 
         $order->update([
@@ -198,7 +198,7 @@ class OrderController extends ApiController
 
         return $this->successResponse(
             new OrderResource($order->load(['vendor', 'items'])),
-            'Order cancelled successfully'
+            __('messages.order.cancelled_successfully')
         );
     }
 

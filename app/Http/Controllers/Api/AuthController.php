@@ -30,7 +30,7 @@ class AuthController extends ApiController
                 $request->ip()
             );
 
-            return $this->successResponse($result, 'OTP request processed');
+            return $this->successResponse($result, __('messages.otp.request_processed'));
 
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 429);
@@ -53,7 +53,7 @@ class AuthController extends ApiController
         );
 
         if (!$verified) {
-            return $this->errorResponse('Invalid or expired OTP code', 400);
+            return $this->errorResponse(__('messages.otp.invalid_or_expired'), 400);
         }
 
         // Create or get user
@@ -70,7 +70,7 @@ class AuthController extends ApiController
         return $this->successResponse([
             'user' => new UserResource($user),
             'token' => $token,
-        ], 'Login successful');
+        ], __('messages.auth.login_successful'));
     }
 
     /**
@@ -100,7 +100,7 @@ class AuthController extends ApiController
 
         return $this->successResponse(
             new UserResource($user),
-            'Profile updated successfully'
+            __('messages.profile.updated_successfully')
         );
     }
 
@@ -127,7 +127,7 @@ class AuthController extends ApiController
 
         return $this->successResponse(
             new UserResource($user),
-            'Avatar updated successfully'
+            __('messages.profile.avatar_updated')
         );
     }
 
@@ -146,7 +146,7 @@ class AuthController extends ApiController
 
         return $this->successResponse(
             new UserResource($user),
-            'Avatar deleted successfully'
+            __('messages.profile.avatar_deleted')
         );
     }
 
@@ -167,7 +167,7 @@ class AuthController extends ApiController
                 $request->ip()
             );
 
-            return $this->successResponse($result, 'OTP sent to new phone number');
+            return $this->successResponse($result, __('messages.otp.sent_to_new_phone'));
 
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 429);
@@ -196,7 +196,7 @@ class AuthController extends ApiController
         );
 
         if (!$verified) {
-            return $this->errorResponse('Invalid or expired OTP code', 400);
+            return $this->errorResponse(__('messages.otp.invalid_or_expired'), 400);
         }
 
         // Update phone number
@@ -208,7 +208,7 @@ class AuthController extends ApiController
 
         return $this->successResponse(
             new UserResource($user),
-            'Phone number updated successfully'
+            __('messages.profile.phone_updated')
         );
     }
 
@@ -225,7 +225,7 @@ class AuthController extends ApiController
         $user = $request->user();
         $user->update(['fcm_token' => $request->token]);
 
-        return $this->successResponse(null, 'FCM token updated');
+        return $this->successResponse(null, __('messages.profile.fcm_token_updated'));
     }
 
     /**
@@ -236,6 +236,6 @@ class AuthController extends ApiController
     {
         $request->user()->currentAccessToken()->delete();
 
-        return $this->successResponse(null, 'Logged out successfully');
+        return $this->successResponse(null, __('messages.auth.logout_successful'));
     }
 }
