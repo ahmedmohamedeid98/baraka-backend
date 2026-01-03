@@ -165,9 +165,16 @@ class OrderController extends ApiController
                     $coupon = Coupon::find($calculation['coupon_id']);
                     if ($coupon) {
                         $coupon->increment('usage_count');
-                        $coupon->users()->syncWithoutDetaching([
-                            $user->id => ['usage_count' => DB::raw('usage_count + 1')]
-                        ]);
+                        
+                        // Check if user already has a pivot record
+                        $existingPivot = $coupon->users()->where('user_id', $user->id)->first();
+                        if ($existingPivot) {
+                            $coupon->users()->updateExistingPivot($user->id, [
+                                'usage_count' => DB::raw('usage_count + 1')
+                            ]);
+                        } else {
+                            $coupon->users()->attach($user->id, ['usage_count' => 1]);
+                        }
                     }
                 }
 
@@ -219,7 +226,7 @@ class OrderController extends ApiController
         $filename = 'payment_' . $userId . '_' . time() . '.jpg';
         $path = 'payment_screenshots/' . $filename;
 
-        Storage::disk('public')->put($path, $imageData);
+        Storage::disk('r2')->put($path, $imageData);
 
         return $path;
     }
@@ -280,5 +287,69 @@ class OrderController extends ApiController
                 ];
             }),
         ]);
+    }
+
+    /**
+     * Update payment method and/or upload payment screenshot
+     * POST /api/v1/orders/{id}/payment
+     */
+    public function updatePayment(Request $request, $id)
+    {
+        $request->validate([
+            'payment_method_id' => 'required|exists:payment_methods,id',
+            'payment_screenshot' => 'nullable|string', // base64 image
+        ]);
+
+        $order = $request->user()->orders()->findOrFail($id);
+
+        // Only allow payment update for pending orders
+        if ($order->status !== 'pending') {
+            return $this->errorResponse(__('messages.order.cannot_update_payment'));
+        }
+
+        // Validate payment method
+        $paymentMethod = PaymentMethod::active()->findOrFail($request->payment_method_id);
+
+        // Check if payment screenshot is required
+        if ($paymentMethod->required_transaction_screenshot && !$request->payment_screenshot) {
+            return $this->errorResponse(__('messages.order.payment_screenshot_required'));
+        }
+
+        $updateData = [
+            'payment_method' => $paymentMethod->code,
+        ];
+
+        // Store payment screenshot if provided
+        if ($request->payment_screenshot) {
+            // Delete old screenshot if exists
+            if ($order->payment_screenshot) {
+                Storage::disk('r2')->delete($order->payment_screenshot);
+            }
+
+            $updateData['payment_screenshot'] = $this->savePaymentScreenshot(
+                $request->payment_screenshot,
+                $request->user()->id
+            );
+            $updateData['payment_status'] = 'pending_verification';
+        }
+        
+        $updateData['payment_rejection_reason'] = null;
+        if($paymentMethod->code === 'cash'){
+            $updateData['payment_status'] = 'pending';
+        }
+
+        $order->update($updateData);
+
+        // Add status history note
+        $order->statusHistories()->create([
+            'status' => $order->status,
+            'note' => 'Payment method updated to ' . $paymentMethod->code,
+            'created_by' => $request->user()->id,
+        ]);
+
+        return $this->successResponse(
+            new OrderResource($order->fresh(['items.product', 'statusHistories'])),
+            __('messages.order.payment_updated')
+        );
     }
 }

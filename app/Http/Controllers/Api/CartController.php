@@ -133,10 +133,22 @@ class CartController extends ApiController
             $request->area_id
         );
 
-        return $this->successResponse([
+        $response = [
             'items' => $result['items'],
             'order_details' => $result['order_details'],
-        ]);
+        ];
+
+        // Include coupon info if coupon was applied successfully
+        if ($result['coupon']) {
+            $response['coupon'] = $result['coupon'];
+        }
+
+        // Include coupon error if validation failed
+        if ($result['coupon_error']) {
+            $response['coupon_error'] = $result['coupon_error'] ?? null;
+        }
+
+        return $this->successResponse($response);
     }
 
     /**

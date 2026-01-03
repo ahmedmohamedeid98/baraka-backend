@@ -25,7 +25,7 @@ class OrderItemResource extends JsonResource
                 fn() => [
                     'id' => $this->product->id,
                     'name' => $this->product->name,
-                    'image' => $this->product->first_image ? asset('storage/' . $this->product->first_image) : null,
+                    'image' => $this->product->first_image,
                 ]
             ),
             

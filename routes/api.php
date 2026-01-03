@@ -87,12 +87,14 @@ Route::prefix('v1')->group(function () {
 
         // Coupons
         Route::post('coupons/apply', [CouponController::class, 'apply']);
+        Route::post('coupons/misapply', [CouponController::class, 'misapply']);
 
         // Orders
         Route::get('orders', [OrderController::class, 'index']);
         Route::get('orders/{id}', [OrderController::class, 'show']);
         Route::post('checkout', [OrderController::class, 'checkout']);
         Route::post('orders/{id}/cancel', [OrderController::class, 'cancel']);
+        Route::post('orders/{id}/payment', [OrderController::class, 'updatePayment']);
 
         // Smart Order (AI-powered text order parsing)
         Route::post('smart-order/parse', [SmartOrderController::class, 'parse']);

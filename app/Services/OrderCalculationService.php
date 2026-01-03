@@ -7,6 +7,7 @@ use App\Models\ProductVariation;
 use App\Models\Coupon;
 use App\Models\Area;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class OrderCalculationService
 {
@@ -45,10 +46,14 @@ class OrderCalculationService
         // Apply coupon
         $discount = 0;
         $couponId = null;
+        $couponData = null;
+        $couponError = null;
         if ($couponCode) {
             $couponResult = $this->applyCoupon($couponCode, $subtotal, null);
             $discount = $couponResult['discount'];
             $couponId = $couponResult['coupon_id'];
+            $couponError = isset($couponResult['coupon_error']) ? __('messages.coupon.' .  $couponResult['coupon_error'], ['min_order_amount' => (int) $couponResult['min_order_amount'] ?? 0]) : null;
+            $couponData = $couponResult['coupon'] ?? null;
         }
 
         // Calculate total
@@ -64,6 +69,8 @@ class OrderCalculationService
                 'total' => round($total, 2),
             ],
             'coupon_id' => $couponId,
+            'coupon' => $couponData,
+            'coupon_error' => $couponError,
         ];
     }
 
@@ -144,23 +151,26 @@ class OrderCalculationService
             ->first();
 
         if (!$coupon) {
-            return ['discount' => 0, 'coupon_id' => null];
+            Log::info('Invalid coupon code', ['code' => $code]);
+            return ['discount' => 0, 'coupon_id' => null, 'coupon_error' => 'invalid', 'min_order_amount' => $coupon->min_order_amount ?? null];
         }
 
         // Check if coupon is for specific vendor
         if ($coupon->vendor_id && $coupon->vendor_id != $vendorId) {
-            return ['discount' => 0, 'coupon_id' => null];
+            Log::info('Coupon vendor mismatch', ['coupon_vendor_id' => $coupon->vendor_id, 'order_vendor_id' => $vendorId]);
+            return ['discount' => 0, 'coupon_id' => null, 'coupon_error' => 'vendor_mismatch', 'min_order_amount' => $coupon->min_order_amount ?? null];
         }
 
         // Check minimum order amount
         if ($coupon->min_order_amount && $subtotal < $coupon->min_order_amount) {
-            return ['discount' => 0, 'coupon_id' => null];
+            Log::info('Minimum order amount not met for coupon', ['subtotal' => $subtotal, 'min_order_amount' => $coupon->min_order_amount]);
+            return ['discount' => 0,'coupon_id' => null,'coupon_error' => 'minimum_not_met','min_order_amount' => $coupon->min_order_amount ?? null];
         }
 
         // Calculate discount
         $discount = 0;
-        if ($coupon->discount_type === 'percentage') {
-            $discount = ($subtotal * $coupon->discount_value) / 100;
+        if ($coupon->type === 'percentage') {
+            $discount = ($subtotal * $coupon->value) / 100;
             
             // Apply max discount cap if set
             if ($coupon->max_discount && $discount > $coupon->max_discount) {
@@ -168,7 +178,7 @@ class OrderCalculationService
             }
         } else {
             // Fixed discount
-            $discount = $coupon->discount_value;
+            $discount = $coupon->value;
         }
 
         // Ensure discount doesn't exceed subtotal
@@ -177,6 +187,13 @@ class OrderCalculationService
         return [
             'discount' => round($discount, 2),
             'coupon_id' => $coupon->id,
+            'coupon_error' => null,
+            'coupon' => [
+                'id' => $coupon->id,
+                'code' => $coupon->code,
+                'type' => $coupon->type,
+                'value' => $coupon->value,
+            ],
         ];
     }
 }

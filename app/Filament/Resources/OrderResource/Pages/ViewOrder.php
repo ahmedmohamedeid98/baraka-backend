@@ -312,7 +312,7 @@ class ViewOrder extends ViewRecord
                             }),
                         Infolists\Components\ImageEntry::make('payment_screenshot')
                             ->label('Payment Screenshot')
-                            ->disk('public')
+                            ->disk('r2')
                             ->visible(fn ($state) => $state !== null)
                             ->columnSpanFull(),
                         
