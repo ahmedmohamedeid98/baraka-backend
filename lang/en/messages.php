@@ -44,6 +44,8 @@ return [
         'expired' => 'Coupon is not valid or has expired',
         'usage_limit_reached' => 'You have reached the usage limit for this coupon',
         'minimum_not_met' => 'Minimum order amount not met',
+        'applied_successfully' => 'Coupon applied successfully. You save :discount EGP',
+        'removed_successfully' => 'Coupon removed successfully',
     ],
     'smart_order' => [
         'analyzed_successfully' => 'Order analyzed successfully',

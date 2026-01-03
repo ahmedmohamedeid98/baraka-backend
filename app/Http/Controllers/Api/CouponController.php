@@ -39,10 +39,26 @@ class CouponController extends ApiController
         }
 
         return $this->successResponse([
-            'code' => $coupon->code,
-            'type' => $coupon->type,
+            'coupon' => [
+                'id' => $coupon->id,
+                'code' => $coupon->code,
+                'type' => $coupon->type,
+                'value' => $coupon->value,
+            ],
+            'subtotal' => $request->subtotal,
             'discount' => $discount,
-            'message' => "Coupon applied successfully. You save {$discount} EGP",
+            'message' => __('messages.coupon.applied_successfully', ['discount' => $discount]),
+        ]);
+    }
+
+    /**
+     * Remove applied coupon
+     * POST /api/v1/coupons/misapply
+     */
+    public function misapply(Request $request)
+    {
+        return $this->successResponse([
+            'message' => __('messages.coupon.removed_successfully'),
         ]);
     }
 }

@@ -44,6 +44,8 @@ return [
         'expired' => 'كود الخصم غير صالح أو منتهي الصلاحية',
         'usage_limit_reached' => 'لقد وصلت إلى الحد الأقصى لاستخدام هذا الكود',
         'minimum_not_met' => 'لم يتم الوصول إلى الحد الأدنى لقيمة الطلب',
+        'applied_successfully' => 'تم تطبيق كود الخصم بنجاح. وفرت :discount جنيه',
+        'removed_successfully' => 'تم إزالة كود الخصم بنجاح',
     ],
     'smart_order' => [
         'analyzed_successfully' => 'تم تحليل الطلب بنجاح',
