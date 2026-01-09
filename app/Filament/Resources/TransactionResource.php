@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Models\Transaction;
+use App\Models\User;
+use App\Models\Vendor;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -30,9 +32,12 @@ class TransactionResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Transaction Details')
                     ->schema([
-                        Forms\Components\Select::make('vendor_wallet_id')
-                            ->label('Vendor')
-                            ->relationship('wallet.vendor', 'name_ar')
+                        Forms\Components\TextInput::make('wallet.owner_type')
+                            ->label('Owner Type')
+                            ->disabled(),
+                        
+                        Forms\Components\TextInput::make('wallet.owner_name')
+                            ->label('Owner')
                             ->disabled(),
                         
                         Forms\Components\Select::make('type')
@@ -67,9 +72,37 @@ class TransactionResource extends Resource
                     ->label('ID')
                     ->sortable(),
                 
-                Tables\Columns\TextColumn::make('wallet.vendor.name_ar')
-                    ->label('Vendor')
-                    ->searchable()
+                Tables\Columns\TextColumn::make('wallet.walletable_type')
+                    ->label('Owner Type')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        Vendor::class => 'Vendor',
+                        User::class => 'User',
+                        default => 'Unknown',
+                    })
+                    ->color(fn ($state) => match($state) {
+                        Vendor::class => 'success',
+                        User::class => 'info',
+                        default => 'gray',
+                    })
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('wallet.owner_name')
+                    ->label('Owner')
+                    ->getStateUsing(function ($record) {
+                        return $record->wallet?->walletable?->name_ar ?? $record->wallet?->walletable?->name ?? 'N/A';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('wallet', function (Builder $query) use ($search) {
+                            $query->whereHasMorph('walletable', [Vendor::class, User::class], function (Builder $query, string $type) use ($search) {
+                                if ($type === Vendor::class) {
+                                    $query->where('name_ar', 'like', "%{$search}%");
+                                } elseif ($type === User::class) {
+                                    $query->where('name', 'like', "%{$search}%");
+                                }
+                            });
+                        });
+                    })
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('type')
@@ -111,6 +144,12 @@ class TransactionResource extends Resource
                     ->sortable(),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('wallet.walletable_type')
+                    ->label('Owner Type')
+                    ->options([
+                        Vendor::class => 'Vendor',
+                        User::class => 'User',
+                    ]),
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
                         'charge' => 'Charge',
@@ -120,8 +159,9 @@ class TransactionResource extends Resource
                         'refund' => 'Refund',
                     ]),
                 Tables\Filters\SelectFilter::make('wallet_id')
-                    ->label('Vendor')
-                    ->relationship('wallet.vendor', 'name_ar')
+                    ->label('Wallet')
+                    ->relationship('wallet', 'id')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->owner_name . ' - ' . $record->owner_type)
                     ->searchable()
                     ->preload(),
                 Tables\Filters\Filter::make('credits')

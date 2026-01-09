@@ -78,6 +78,19 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsToMany(Product::class, 'favorites')->withTimestamps();
     }
 
+    public function wallet()
+    {
+        return $this->morphOne(Wallet::class, 'walletable');
+    }
+
+    /**
+     * Get or create wallet for user
+     */
+    public function getOrCreateWallet(): Wallet
+    {
+        return $this->wallet ?? $this->wallet()->create(['balance' => 0]);
+    }
+
     // Scopes
     public function scopeActive($query)
     {

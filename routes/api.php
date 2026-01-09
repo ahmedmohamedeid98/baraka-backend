@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\VendorController;
 use App\Http\Controllers\Api\VendorCategoryController;
 use App\Http\Controllers\Api\VendorAuthController;
 use App\Http\Controllers\Api\VendorWalletController;
+use App\Http\Controllers\Api\UserWalletController;
 use App\Http\Controllers\Api\Vendor\VendorOrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -104,6 +105,10 @@ Route::prefix('v1')->group(function () {
         Route::put('smart-order/{id}', [SmartOrderController::class, 'update']);
         Route::delete('smart-order/{id}', [SmartOrderController::class, 'destroy']);
         Route::post('smart-order/{id}/reuse', [SmartOrderController::class, 'reuse']);
+
+        // User Wallet
+        Route::get('wallet', [UserWalletController::class, 'index']);
+        Route::get('wallet/transactions', [UserWalletController::class, 'transactions']);
     });
 
     // Vendor Protected Routes (vendor auth required)

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\TransactionResource;
 use App\Http\Resources\VendorSubscriptionResource;
-use App\Http\Resources\VendorWalletResource;
+use App\Http\Resources\WalletResource;
 use App\Models\Package;
 use App\Models\Transaction;
 use App\Models\VendorSubscription;
@@ -22,7 +22,7 @@ class VendorWalletController extends ApiController
         $wallet = $vendor->getOrCreateWallet();
 
         return $this->successResponse([
-            'wallet' => new VendorWalletResource($wallet),
+            'wallet' => new WalletResource($wallet),
             'active_subscription' => $vendor->activeSubscription 
                 ? new VendorSubscriptionResource($vendor->activeSubscription->load('package')) 
                 : null,
@@ -99,7 +99,7 @@ class VendorWalletController extends ApiController
 
         return $this->successResponse([
             'subscription' => new VendorSubscriptionResource($subscription->load('package')),
-            'wallet' => new VendorWalletResource($wallet->fresh()),
+            'wallet' => new WalletResource($wallet->fresh()),
         ], 'تم الاشتراك بنجاح');
     }
 
@@ -143,7 +143,7 @@ class VendorWalletController extends ApiController
 
         return $this->successResponse([
             'subscription' => new VendorSubscriptionResource($newSubscription->load('package')),
-            'wallet' => new VendorWalletResource($wallet->fresh()),
+            'wallet' => new WalletResource($wallet->fresh()),
         ], 'تم تغيير الباقة بنجاح');
     }
 

@@ -83,7 +83,7 @@ class Vendor extends Authenticatable implements FilamentUser
 
     public function wallet()
     {
-        return $this->hasOne(VendorWallet::class);
+        return $this->morphOne(Wallet::class, 'walletable');
     }
 
     public function subscriptions()
@@ -99,7 +99,7 @@ class Vendor extends Authenticatable implements FilamentUser
     /**
      * Get or create wallet for vendor
      */
-    public function getOrCreateWallet(): VendorWallet
+    public function getOrCreateWallet(): Wallet
     {
         return $this->wallet ?? $this->wallet()->create(['balance' => 0]);
     }

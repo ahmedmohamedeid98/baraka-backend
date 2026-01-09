@@ -16,7 +16,7 @@ class Transaction extends Model
     const TYPE_REFUND = 'refund';
 
     protected $fillable = [
-        'vendor_wallet_id',
+        'wallet_id',
         'vendor_id',
         'type',
         'amount',
@@ -39,7 +39,7 @@ class Transaction extends Model
     // Relationships
     public function wallet()
     {
-        return $this->belongsTo(VendorWallet::class, 'vendor_wallet_id');
+        return $this->belongsTo(Wallet::class);
     }
 
     public function order()
