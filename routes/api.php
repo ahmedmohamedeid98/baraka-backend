@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\VendorAuthController;
 use App\Http\Controllers\Api\VendorWalletController;
 use App\Http\Controllers\Api\UserWalletController;
 use App\Http\Controllers\Api\WalletTransferController;
+use App\Http\Controllers\Api\WalletChargeRequestController;
 use App\Http\Controllers\Api\Vendor\VendorOrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -120,6 +121,16 @@ Route::prefix('v1')->group(function () {
         });
         Route::get('wallet/transfers', [WalletTransferController::class, 'history']);
         Route::get('wallet/transfers/{id}', [WalletTransferController::class, 'show']);
+        
+        // Wallet Charge Requests
+        Route::prefix('wallet/charge-requests')->group(function () {
+            Route::get('/', [WalletChargeRequestController::class, 'index']);
+            Route::post('/', [WalletChargeRequestController::class, 'store'])->middleware('throttle:10,60'); // 10 per hour
+            Route::get('stats', [WalletChargeRequestController::class, 'stats']);
+            Route::get('{id}', [WalletChargeRequestController::class, 'show']);
+            Route::put('{id}', [WalletChargeRequestController::class, 'update'])->middleware('throttle:10,60'); // Resubmit
+            Route::delete('{id}', [WalletChargeRequestController::class, 'destroy']);
+        });
     });
 
     // Vendor Protected Routes (vendor auth required)
@@ -153,6 +164,16 @@ Route::prefix('v1')->group(function () {
         });
         Route::get('wallet/transfers', [WalletTransferController::class, 'history']);
         Route::get('wallet/transfers/{id}', [WalletTransferController::class, 'show']);
+        
+        // Wallet Charge Requests (Vendors)
+        Route::prefix('wallet/charge-requests')->group(function () {
+            Route::get('/', [WalletChargeRequestController::class, 'index']);
+            Route::post('/', [WalletChargeRequestController::class, 'store'])->middleware('throttle:10,60'); // 10 per hour
+            Route::get('stats', [WalletChargeRequestController::class, 'stats']);
+            Route::get('{id}', [WalletChargeRequestController::class, 'show']);
+            Route::put('{id}', [WalletChargeRequestController::class, 'update'])->middleware('throttle:10,60'); // Resubmit
+            Route::delete('{id}', [WalletChargeRequestController::class, 'destroy']);
+        });
 
         // Vendor Orders
         Route::get('orders', [VendorOrderController::class, 'index']);
