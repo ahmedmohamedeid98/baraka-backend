@@ -21,11 +21,11 @@ class WalletChargeRequestResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
     
-    protected static ?string $navigationLabel = 'طلبات شحن المحفظة';
+    protected static ?string $navigationLabel = 'Wallet Charge Requests';
     
-    protected static ?string $modelLabel = 'طلب شحن';
+    protected static ?string $modelLabel = 'Wallet Charge Request';
     
-    protected static ?string $pluralModelLabel = 'طلبات الشحن';
+    protected static ?string $pluralModelLabel = 'Wallet Charge Requests';
     
     protected static ?string $navigationGroup = 'Wallet Management';
     

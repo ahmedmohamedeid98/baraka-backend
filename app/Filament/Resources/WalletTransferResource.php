@@ -18,7 +18,7 @@ class WalletTransferResource extends Resource
 {
     protected static ?string $model = WalletTransfer::class;
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
-    protected static ?string $navigationGroup = 'Subscriptions';
+    protected static ?string $navigationGroup = 'Wallet Management';
     protected static ?int $navigationSort = 4;
     protected static ?string $navigationLabel = 'Wallet Transfers';
 
