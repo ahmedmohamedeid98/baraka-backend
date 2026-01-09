@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\VendorCategoryController;
 use App\Http\Controllers\Api\VendorAuthController;
 use App\Http\Controllers\Api\VendorWalletController;
 use App\Http\Controllers\Api\UserWalletController;
+use App\Http\Controllers\Api\WalletTransferController;
 use App\Http\Controllers\Api\Vendor\VendorOrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -109,6 +110,16 @@ Route::prefix('v1')->group(function () {
         // User Wallet
         Route::get('wallet', [UserWalletController::class, 'index']);
         Route::get('wallet/transactions', [UserWalletController::class, 'transactions']);
+        
+        // Wallet Transfers
+        Route::prefix('wallet/transfer')->group(function () {
+            Route::post('calculate-fee', [WalletTransferController::class, 'calculateFee']);
+            Route::post('validate', [WalletTransferController::class, 'validate']);
+            Route::post('/', [WalletTransferController::class, 'transfer'])->middleware('throttle:5,1'); // 5 per minute
+            Route::get('stats', [WalletTransferController::class, 'stats']);
+        });
+        Route::get('wallet/transfers', [WalletTransferController::class, 'history']);
+        Route::get('wallet/transfers/{id}', [WalletTransferController::class, 'show']);
     });
 
     // Vendor Protected Routes (vendor auth required)
@@ -132,6 +143,16 @@ Route::prefix('v1')->group(function () {
         Route::post('wallet/subscription/disable-auto-renew', [VendorWalletController::class, 'disableAutoRenew']);
         Route::post('wallet/subscription/enable-auto-renew', [VendorWalletController::class, 'enableAutoRenew']);
         Route::post('wallet/subscription/cancel', [VendorWalletController::class, 'cancelSubscription']);
+
+        // Wallet Transfers (Vendors)
+        Route::prefix('wallet/transfer')->group(function () {
+            Route::post('calculate-fee', [WalletTransferController::class, 'calculateFee']);
+            Route::post('validate', [WalletTransferController::class, 'validate']);
+            Route::post('/', [WalletTransferController::class, 'transfer'])->middleware('throttle:5,1'); // 5 per minute
+            Route::get('stats', [WalletTransferController::class, 'stats']);
+        });
+        Route::get('wallet/transfers', [WalletTransferController::class, 'history']);
+        Route::get('wallet/transfers/{id}', [WalletTransferController::class, 'show']);
 
         // Vendor Orders
         Route::get('orders', [VendorOrderController::class, 'index']);
