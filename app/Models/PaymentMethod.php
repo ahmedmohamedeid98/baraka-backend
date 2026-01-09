@@ -19,7 +19,12 @@ class PaymentMethod extends Model
         'discount_type',
         'discount_amount',
         'required_transaction_screenshot',
+        'context',
     ];
+
+    const CONTEXT_ORDER = 'order';
+    const CONTEXT_WALLET_CHARGE = 'wallet_charge';
+    const CONTEXT_BOTH = 'both';
 
     protected function casts(): array
     {
@@ -53,6 +58,17 @@ class PaymentMethod extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order');
+    }
+
+    /**
+     * Scope to filter by context
+     */
+    public function scopeForContext($query, $context)
+    {
+        return $query->where(function ($q) use ($context) {
+            $q->where('context', $context)
+              ->orWhere('context', self::CONTEXT_BOTH);
+        });
     }
 
     /**

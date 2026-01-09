@@ -101,7 +101,13 @@ class Vendor extends Authenticatable implements FilamentUser
      */
     public function getOrCreateWallet(): Wallet
     {
-        return $this->wallet ?? $this->wallet()->create(['balance' => 0]);
+        return $this->wallet()->firstOrCreate(
+            [
+                'walletable_type' => self::class,
+                'walletable_id' => $this->id,
+            ],
+            ['balance' => 0]
+        );
     }
 
     /**

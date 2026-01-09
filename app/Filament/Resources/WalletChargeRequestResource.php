@@ -63,7 +63,7 @@ class WalletChargeRequestResource extends Resource
                         Forms\Components\TextInput::make('amount')
                             ->label('المبلغ')
                             ->numeric()
-                            ->prefix('ر.س')
+                            ->prefix('ج.م')
                             ->disabled()
                             ->dehydrated(false),
                         
@@ -110,7 +110,7 @@ class WalletChargeRequestResource extends Resource
                         
                         Forms\Components\Placeholder::make('wallet_balance')
                             ->label('رصيد المحفظة الحالي')
-                            ->content(fn ($record) => $record->wallet ? number_format($record->wallet->balance, 2) . ' ر.س' : '-'),
+                            ->content(fn ($record) => $record->wallet ? number_format($record->wallet->balance, 2) . ' ج.م' : '-'),
                     ])->columns(2),
                 
                 Forms\Components\Section::make('حالة الطلب')
@@ -161,7 +161,7 @@ class WalletChargeRequestResource extends Resource
                 
                 Tables\Columns\TextColumn::make('amount')
                     ->label('المبلغ')
-                    ->money('SAR')
+                    ->money('EGP')
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('paymentMethodText')
@@ -258,7 +258,7 @@ class WalletChargeRequestResource extends Resource
                     ->visible(fn (WalletChargeRequest $record) => $record->status === WalletChargeRequest::STATUS_PENDING)
                     ->requiresConfirmation()
                     ->modalHeading('الموافقة على طلب الشحن')
-                    ->modalDescription(fn (WalletChargeRequest $record) => "هل تريد الموافقة على طلب شحن بمبلغ " . number_format($record->amount, 2) . " ر.س؟")
+                    ->modalDescription(fn (WalletChargeRequest $record) => "هل تريد الموافقة على طلب شحن بمبلغ " . number_format($record->amount, 2) . " ج.م؟")
                     ->action(function (WalletChargeRequest $record) {
                         try {
                             DB::beginTransaction();
@@ -271,7 +271,7 @@ class WalletChargeRequestResource extends Resource
                             Notification::make()
                                 ->success()
                                 ->title('تمت الموافقة بنجاح')
-                                ->body('تم شحن المحفظة بمبلغ ' . number_format($record->amount, 2) . ' ر.س')
+                                ->body('تم شحن المحفظة بمبلغ ' . number_format($record->amount, 2) . ' ج.م')
                                 ->send();
                         } catch (\Exception $e) {
                             DB::rollBack();

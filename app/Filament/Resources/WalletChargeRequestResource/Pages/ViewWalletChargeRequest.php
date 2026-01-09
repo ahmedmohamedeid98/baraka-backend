@@ -27,7 +27,7 @@ class ViewWalletChargeRequest extends ViewRecord
                 ->visible(fn () => $this->record->status === WalletChargeRequest::STATUS_PENDING)
                 ->requiresConfirmation()
                 ->modalHeading('الموافقة على طلب الشحن')
-                ->modalDescription(fn () => "هل تريد الموافقة على طلب شحن بمبلغ " . number_format($this->record->amount, 2) . " ر.س؟")
+                ->modalDescription(fn () => "هل تريد الموافقة على طلب شحن بمبلغ " . number_format($this->record->amount, 2) . " ج.م؟")
                 ->action(function () {
                     try {
                         DB::beginTransaction();
@@ -40,7 +40,7 @@ class ViewWalletChargeRequest extends ViewRecord
                         Notification::make()
                             ->success()
                             ->title('تمت الموافقة بنجاح')
-                            ->body('تم شحن المحفظة بمبلغ ' . number_format($this->record->amount, 2) . ' ر.س')
+                            ->body('تم شحن المحفظة بمبلغ ' . number_format($this->record->amount, 2) . ' ج.م')
                             ->send();
                         
                         return redirect()->to(WalletChargeRequestResource::getUrl('index'));

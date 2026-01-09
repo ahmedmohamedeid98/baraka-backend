@@ -21,6 +21,7 @@ class PaymentMethodResource extends JsonResource
             'description' => $this->description,
             'icon' => $this->icon,
             'is_active' => $this->is_active,
+            'context' => $this->context,
             'discount_type' => $this->discount_type,
             'discount_amount' => (float) $this->discount_amount,
             'required_transaction_screenshot' => $this->required_transaction_screenshot,
