@@ -22,11 +22,14 @@ class Order extends Model
         'subtotal',
         'delivery_fee',
         'discount',
+        'wallet_amount',
+        'paid_amount',
         'total',
         'coupon_id',
         'coupon_code',
         'payment_method',
         'payment_screenshot',
+        'wallet_transaction_id',
         'payment_status',
         'payment_rejection_reason',
         'status',
@@ -45,6 +48,8 @@ class Order extends Model
             'subtotal' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'discount' => 'decimal:2',
+            'wallet_amount' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
             'total' => 'decimal:2',
             'confirmed_at' => 'datetime',
             'delivered_at' => 'datetime',
@@ -82,6 +87,11 @@ class Order extends Model
     public function coupon()
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    public function walletTransaction()
+    {
+        return $this->belongsTo(Transaction::class, 'wallet_transaction_id');
     }
 
     public function items()

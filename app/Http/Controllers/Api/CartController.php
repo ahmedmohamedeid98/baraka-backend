@@ -133,9 +133,26 @@ class CartController extends ApiController
             $request->area_id
         );
 
+        // Calculate wallet usage
+        $walletBalance = 0;
+        $walletAmount = 0;
+        $paidAmount = $result['order_details']['total'];
+        
+        if ($request->user()) {
+            $userWallet = $request->user()->getOrCreateWallet();
+            $walletBalance = $userWallet->balance;
+            $walletAmount = min($walletBalance, $result['order_details']['total']);
+            $paidAmount = $result['order_details']['total'] - $walletAmount;
+        }
+
         $response = [
             'items' => $result['items'],
             'order_details' => $result['order_details'],
+            'wallet_details' => [
+                'balance' => (float) $walletBalance,
+                'wallet_amount' => (float) $walletAmount,
+                'paid_amount' => (float) $paidAmount,
+            ],
         ];
 
         // Include coupon info if coupon was applied successfully

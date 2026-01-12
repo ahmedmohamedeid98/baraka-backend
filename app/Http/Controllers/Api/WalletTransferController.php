@@ -7,12 +7,20 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Models\Wallet;
 use App\Models\WalletTransfer;
+use App\Services\PhoneRecipientService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 
 class WalletTransferController extends ApiController
 {
+    protected PhoneRecipientService $phoneRecipientService;
+
+    public function __construct(PhoneRecipientService $phoneRecipientService)
+    {
+        $this->phoneRecipientService = $phoneRecipientService;
+    }
     /**
      * Calculate transfer fee
      * POST /api/v1/{guard}/wallet/transfer/calculate-fee
@@ -30,7 +38,7 @@ class WalletTransferController extends ApiController
         $fee = $wallet->calculateTransferFee($amount);
         $total = $amount + $fee;
 
-        return $this->successResponse([
+        $response = [
             'amount' => number_format($amount, 2),
             'fee' => number_format($fee, 2),
             'fee_percentage' => config('api.wallet_transfer.fee_percentage', 1),
@@ -39,7 +47,9 @@ class WalletTransferController extends ApiController
             'amount_received' => number_format($amount, 2),
             'sufficient_balance' => $wallet->hasSufficientBalance($total),
             'current_balance' => number_format($wallet->balance, 2),
-        ]);
+        ];
+
+        return $this->successResponse($response);
     }
 
     /**
@@ -49,8 +59,7 @@ class WalletTransferController extends ApiController
     public function validate(Request $request)
     {
         $request->validate([
-            'recipient_type' => 'required|in:user,vendor',
-            'recipient_id' => 'required|integer',
+            'phone' => 'required|string',
             'amount' => 'required|numeric|min:' . config('api.wallet_transfer.min_amount', 10),
         ]);
 
@@ -59,19 +68,22 @@ class WalletTransferController extends ApiController
         
         $errors = [];
         $warnings = [];
+        $recipientName = null;
 
         // Check if transfers are enabled
         if (!config('api.wallet_transfer.enabled', true)) {
             $errors[] = 'خدمة تحويل الرصيد غير متاحة حالياً';
         }
 
-        // Find recipient wallet
-        $recipientType = $request->recipient_type === 'vendor' ? Vendor::class : User::class;
-        $recipient = $recipientType::find($request->recipient_id);
+        // Format and find recipient by phone
+        $phone = $this->phoneRecipientService->formatEgyptianPhone($request->phone);
+        $recipientData = $this->phoneRecipientService->findRecipientByPhone($phone);
         
-        if (!$recipient) {
+        if (!$recipientData) {
             $errors[] = 'المستلم غير موجود';
         } else {
+            $recipient = $recipientData['model'];
+            $recipientName = $this->phoneRecipientService->maskName($recipientData['name']);
             $recipientWallet = $recipient->wallet;
             
             if (!$recipientWallet) {
@@ -141,6 +153,7 @@ class WalletTransferController extends ApiController
             'valid' => empty($errors),
             'errors' => $errors,
             'warnings' => $warnings,
+            'recipient_name' => $recipientName,
             'fee_info' => [
                 'amount' => $amount,
                 'fee' => $fee,
@@ -166,27 +179,25 @@ class WalletTransferController extends ApiController
         RateLimiter::hit($key, 60); // 5 attempts per minute
 
         $request->validate([
-            'recipient_type' => 'required|in:user,vendor',
-            'recipient_id' => 'required|integer|exists:' . ($request->recipient_type === 'vendor' ? 'vendors' : 'users') . ',id',
+            'phone' => 'required|string',
             'amount' => 'required|numeric|min:' . config('api.wallet_transfer.min_amount', 10) . '|max:' . config('api.wallet_transfer.max_amount', 10000),
             'description' => 'nullable|string|max:500',
-            'verification_code' => config('api.wallet_transfer.require_verification', true) ? 'required|string' : 'nullable|string',
+            'wallet_password' => 'nullable|string|size:4',
         ]);
 
         $user = $request->user();
         $wallet = $user->getOrCreateWallet();
 
-        // Verify phone/OTP if required
-        if (config('api.wallet_transfer.require_verification', true)) {
-            // Here you would validate the verification code
-            // For now, we'll skip this implementation
-            // You can integrate with your existing OTP system
-        }
-
         try {
-            // Find recipient wallet
-            $recipientType = $request->recipient_type === 'vendor' ? Vendor::class : User::class;
-            $recipient = $recipientType::findOrFail($request->recipient_id);
+            // Format and find recipient by phone
+            $phone = $this->phoneRecipientService->formatEgyptianPhone($request->phone);
+            $recipientData = $this->phoneRecipientService->findRecipientByPhone($phone);
+            
+            if (!$recipientData) {
+                return $this->errorResponse('المستلم غير موجود', 404);
+            }
+            
+            $recipient = $recipientData['model'];
             $recipientWallet = $recipient->getOrCreateWallet();
 
             // Collect security data
@@ -205,7 +216,8 @@ class WalletTransferController extends ApiController
                 $recipientWallet,
                 (float) $request->amount,
                 $request->description,
-                $securityData
+                $securityData,
+                $request->wallet_password
             );
 
             RateLimiter::clear($key); // Clear rate limit on successful transfer
@@ -215,7 +227,10 @@ class WalletTransferController extends ApiController
                 'message' => 'تم التحويل بنجاح',
             ], 'تم التحويل بنجاح');
 
-        } catch (\Exception $e) {
+        } catch (ValidationException $ve) {
+            throw $ve; // Rethrow validation exceptions
+        }
+        catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 400);
         }
     }

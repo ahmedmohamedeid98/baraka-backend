@@ -78,6 +78,8 @@ return [
         
         // Threshold for auto-flagging (in EGP)
         'suspicious_amount_threshold' => env('WALLET_TRANSFER_SUSPICIOUS_THRESHOLD', 5000),
+
+        'require_wallet_password' => env('WALLET_TRANSFER_REQUIRE_WALLET_PASSWORD', false),
     ],
 
 ];

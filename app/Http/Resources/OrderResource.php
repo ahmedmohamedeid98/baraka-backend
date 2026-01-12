@@ -27,6 +27,8 @@ class OrderResource extends JsonResource
             'subtotal' => (float) $this->subtotal,
             'delivery_fee' => (float) $this->delivery_fee,
             'discount' => (float) $this->discount,
+            'wallet_amount' => (float) $this->wallet_amount,
+            'paid_amount' => (float) $this->paid_amount,
             'total' => (float) $this->total,
             'coupon_code' => $this->coupon_code,
             

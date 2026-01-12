@@ -117,6 +117,28 @@ class OrderController extends ApiController
                 $finalTotal = $calculation['order_details']['total'] - $paymentDiscount;
                 $finalTotal = max(0, $finalTotal);
 
+                // Calculate wallet deduction
+                $userWallet = $user->getOrCreateWallet();
+                $walletBalance = $userWallet->balance;
+                $walletAmount = min($walletBalance, $finalTotal);
+                $paidAmount = $finalTotal - $walletAmount;
+                $transactionId = null;
+
+                // Deduct from wallet if applicable
+                if ($walletAmount > 0) {
+                    $userWallet->debit($walletAmount);
+                    
+                    // Create wallet transaction
+                    $transaction = $userWallet->transactions()->create([
+                        'type' => \App\Models\Transaction::TYPE_ORDER_PAYMENT,
+                        'amount' => -$walletAmount,
+                        'balance_after' => $userWallet->balance,
+                        'description' => 'Payment for order',
+                    ]);
+                    
+                    $transactionId = $transaction->id;
+                }
+
                 // Create order
                 $order = Order::create([
                     'user_id' => $user->id,
@@ -129,11 +151,14 @@ class OrderController extends ApiController
                     'subtotal' => $calculation['order_details']['subtotal'],
                     'delivery_fee' => $calculation['order_details']['delivery_fee'],
                     'discount' => $calculation['order_details']['discount'] + $paymentDiscount,
+                    'wallet_amount' => $walletAmount,
+                    'paid_amount' => $paidAmount,
                     'total' => $finalTotal,
                     'coupon_id' => $calculation['coupon_id'],
                     'coupon_code' => $request->coupon_code,
                     'payment_method' => $paymentMethod->code,
                     'payment_screenshot' => $paymentScreenshotPath,
+                    'wallet_transaction_id' => $transactionId,
                     'payment_status' => $paymentScreenshotPath ? 'pending_verification' : 'pending',
                     'notes' => $request->notes,
                 ]);
@@ -158,6 +183,11 @@ class OrderController extends ApiController
                         $product = \App\Models\Product::find($item['product_id']);
                         $product?->decrement('stock', $item['quantity']);
                     }
+                }
+
+                // Update wallet transaction with order_id after order is created
+                if ($transactionId) {
+                    \App\Models\Transaction::where('id', $transactionId)->update(['order_id' => $order->id]);
                 }
 
                 // Update coupon usage
@@ -199,6 +229,8 @@ class OrderController extends ApiController
                         'delivery_fee' => (float) $order->delivery_fee,
                         'discount' => (float) $order->discount,
                         'total' => (float) $order->total,
+                        'wallet_amount' => (float) $order->wallet_amount,
+                        'paid_amount' => (float) $order->paid_amount,
                     ],
                 ], __('messages.order.created_successfully'), 201);
             });
@@ -256,6 +288,21 @@ class OrderController extends ApiController
         // Restore stock
         foreach ($order->items as $item) {
             $item->product->increment('stock', $item->quantity);
+        }
+
+        // Refund wallet amount if applicable
+        if ($order->wallet_amount > 0) {
+            $userWallet = $request->user()->getOrCreateWallet();
+            $userWallet->credit($order->wallet_amount);
+            
+            // Create refund transaction
+            $userWallet->transactions()->create([
+                'type' => \App\Models\Transaction::TYPE_REFUND,
+                'amount' => $order->wallet_amount,
+                'balance_after' => $userWallet->balance,
+                'description' => 'Refund for cancelled order #' . $order->order_number,
+                'order_id' => $order->id,
+            ]);
         }
 
         return $this->successResponse(

@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\TransactionType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class Wallet extends Model
 {
@@ -14,6 +16,11 @@ class Wallet extends Model
         'walletable_type',
         'walletable_id',
         'balance',
+        'password',
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 
     protected function casts(): array
@@ -107,6 +114,39 @@ class Wallet extends Model
     }
 
     /**
+     * Check if wallet has a password set
+     */
+    public function hasPassword(): bool
+    {
+        return !empty($this->password);
+    }
+
+    /**
+     * Set wallet password (4 digits)
+     */
+    public function setPassword(string $password): void
+    {
+        if (!preg_match('/^\d{4}$/', $password)) {
+            throw new \Exception('كلمة المرور يجب أن تكون 4 أرقام فقط');
+        }
+
+        $this->password = bcrypt($password);
+        $this->save();
+    }
+
+    /**
+     * Verify wallet password
+     */
+    public function verifyPassword(string $password): bool
+    {
+        if (!$this->hasPassword()) {
+            throw new \Exception('لم يتم تعيين كلمة مرور للمحفظة');
+        }
+
+        return \Hash::check($password, $this->password);
+    }
+
+    /**
      * Check if wallet has sufficient balance
      */
     public function hasSufficientBalance(float $amount): bool
@@ -160,23 +200,34 @@ class Wallet extends Model
     /**
      * Transfer balance to another wallet
      */
-    public function transferTo(Wallet $toWallet, float $amount, ?string $description = null, array $securityData = []): WalletTransfer
+    public function transferTo(Wallet $toWallet, float $amount, ?string $description = null, array $securityData = [], ?string $walletPassword = null): WalletTransfer
     {
         // Validation
         if (!config('api.wallet_transfer.enabled', true)) {
             throw new \Exception('تحويل الرصيد غير متاح حالياً');
         }
 
+        // Verify wallet password if set
+        if ($this->hasPassword()) {
+            if (empty($walletPassword)) {
+                throw ValidationException::withMessages(['wallet_password' => ['كلمة مرور المحفظة مطلوبة']]);
+            }
+            
+            if (!$this->verifyPassword($walletPassword)) {
+                throw ValidationException::withMessages(['wallet_password' => ['كلمة مرور المحفظة غير صحيحة']]);
+            }
+        }
+
         if ($this->id === $toWallet->id) {
-            throw new \Exception('لا يمكن التحويل إلى نفس المحفظة');
+            throw ValidationException::withMessages(['phone' => ['لا يمكن التحويل إلى نفس المحفظة']]);
         }
 
         if ($amount < config('api.wallet_transfer.min_amount', 10)) {
-            throw new \Exception('المبلغ أقل من الحد الأدنى للتحويل');
+            throw ValidationException::withMessages(['amount' => ['المبلغ أقل من الحد الأدنى للتحويل']]);
         }
 
         if ($amount > config('api.wallet_transfer.max_amount', 10000)) {
-            throw new \Exception('المبلغ أكبر من الحد الأقصى للتحويل');
+            throw ValidationException::withMessages(['amount' => ['المبلغ أكبر من الحد الأقصى للتحويل']]);
         }
 
         // Calculate fee
@@ -184,7 +235,7 @@ class Wallet extends Model
         $totalDeducted = $amount + $fee;
 
         if (!$this->hasSufficientBalance($totalDeducted)) {
-            throw new \Exception('الرصيد غير كافي لإتمام التحويل');
+            throw ValidationException::withMessages(['amount' => ['الرصيد غير كافي لإتمام التحويل']]);
         }
 
         // Check daily limits
@@ -198,7 +249,7 @@ class Wallet extends Model
             // Create sender transaction
             $senderTransactionData = [
                 'wallet_id' => $this->id,
-                'type' => 'refund', // Using refund type for transfers
+                'type' => TransactionType::TRANSFER->value,
                 'amount' => -$totalDeducted,
                 'balance_after' => $this->balance,
                 'description' => $description ?? "تحويل رصيد - رسوم: {$fee} جنيه",
@@ -217,7 +268,7 @@ class Wallet extends Model
             // Create receiver transaction
             $receiverTransactionData = [
                 'wallet_id' => $toWallet->id,
-                'type' => 'charge',
+                'type' => TransactionType::TRANSFER->value,
                 'amount' => $amount,
                 'balance_after' => $toWallet->balance,
                 'description' => $description ?? 'استلام تحويل رصيد',

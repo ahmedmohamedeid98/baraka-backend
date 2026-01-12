@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TransactionType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -9,11 +10,14 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    // Legacy constants for backward compatibility
     const TYPE_CHARGE = 'charge';
     const TYPE_SUBSCRIPTION = 'subscription';
     const TYPE_GIFT = 'gift';
     const TYPE_COMMISSION = 'commission';
     const TYPE_REFUND = 'refund';
+    const TYPE_ORDER_PAYMENT = 'order_payment';
+    const TYPE_TRANSFER = 'transfer';
 
     protected $fillable = [
         'wallet_id',
@@ -33,6 +37,7 @@ class Transaction extends Model
         return [
             'amount' => 'decimal:2',
             'balance_after' => 'decimal:2',
+            'type' => TransactionType::class,
         ];
     }
 
@@ -78,8 +83,11 @@ class Transaction extends Model
         return $query->where('amount', '<', 0);
     }
 
-    public function scopeOfType($query, string $type)
+    public function scopeOfType($query, string|TransactionType $type)
     {
+        if ($type instanceof TransactionType) {
+            return $query->where('type', $type->value);
+        }
         return $query->where('type', $type);
     }
 
@@ -96,12 +104,18 @@ class Transaction extends Model
 
     public function getTypeTextAttribute(): string
     {
+        if ($this->type instanceof TransactionType) {
+            return $this->type->label();
+        }
+        
         return match($this->type) {
             self::TYPE_CHARGE => 'شحن رصيد',
             self::TYPE_SUBSCRIPTION => 'اشتراك',
             self::TYPE_GIFT => 'هدية',
             self::TYPE_COMMISSION => 'عمولة',
             self::TYPE_REFUND => 'استرداد',
+            self::TYPE_ORDER_PAYMENT => 'دفع طلب',
+            self::TYPE_TRANSFER => 'تحويل',
             default => $this->type,
         };
     }

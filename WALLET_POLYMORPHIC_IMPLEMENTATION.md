@@ -84,8 +84,8 @@ Successfully converted the Wallet and Transaction system to use polymorphic rela
 
 ### 4. API Controllers
 
-#### Updated: VendorWalletController
-**File:** `app/Http/Controllers/Api/VendorWalletController.php`
+#### Updated: VendorSubscriptionController
+**File:** `app/Http/Controllers/Api/VendorSubscriptionController.php`
 
 - Updated to use new `Wallet` model
 - Changed resource from `VendorWalletResource` to `WalletResource`

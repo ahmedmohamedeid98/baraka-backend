@@ -15,9 +15,10 @@ use App\Http\Controllers\Api\SmartOrderController;
 use App\Http\Controllers\Api\VendorController;
 use App\Http\Controllers\Api\VendorCategoryController;
 use App\Http\Controllers\Api\VendorAuthController;
-use App\Http\Controllers\Api\VendorWalletController;
+use App\Http\Controllers\Api\VendorSubscriptionController;
 use App\Http\Controllers\Api\UserWalletController;
 use App\Http\Controllers\Api\WalletTransferController;
+use App\Http\Controllers\Api\WalletPasswordController;
 use App\Http\Controllers\Api\WalletChargeRequestController;
 use App\Http\Controllers\Api\Vendor\VendorOrderController;
 use Illuminate\Support\Facades\Route;
@@ -122,6 +123,15 @@ Route::prefix('v1')->group(function () {
         Route::get('wallet/transfers', [WalletTransferController::class, 'history']);
         Route::get('wallet/transfers/{id}', [WalletTransferController::class, 'show']);
         
+        // Wallet Password
+        Route::prefix('wallet/password')->group(function () {
+            Route::get('status', [WalletPasswordController::class, 'status']);
+            Route::post('set', [WalletPasswordController::class, 'setPassword']);
+            Route::post('change', [WalletPasswordController::class, 'changePassword']);
+            Route::post('reset-otp', [WalletPasswordController::class, 'resetPasswordOtp']);
+            Route::post('reset', [WalletPasswordController::class, 'resetPassword']);
+        });
+        
         // Wallet Charge Requests
         Route::prefix('wallet/charge-requests')->group(function () {
             Route::get('/', [WalletChargeRequestController::class, 'index']);
@@ -145,15 +155,15 @@ Route::prefix('v1')->group(function () {
         Route::get('packages/{id}', [PackageController::class, 'show']);
 
         // Wallet & Subscriptions
-        Route::get('wallet', [VendorWalletController::class, 'index']);
-        Route::get('wallet/transactions', [VendorWalletController::class, 'transactions']);
-        Route::post('wallet/subscribe', [VendorWalletController::class, 'subscribe']);
-        Route::post('wallet/change-package', [VendorWalletController::class, 'changePackage']);
-        Route::get('wallet/subscriptions', [VendorWalletController::class, 'subscriptions']);
-        Route::post('wallet/subscription/toggle-auto-renew', [VendorWalletController::class, 'toggleAutoRenew']);
-        Route::post('wallet/subscription/disable-auto-renew', [VendorWalletController::class, 'disableAutoRenew']);
-        Route::post('wallet/subscription/enable-auto-renew', [VendorWalletController::class, 'enableAutoRenew']);
-        Route::post('wallet/subscription/cancel', [VendorWalletController::class, 'cancelSubscription']);
+        Route::get('wallet', [VendorSubscriptionController::class, 'index']);
+        Route::get('wallet/transactions', [VendorSubscriptionController::class, 'transactions']);
+        Route::post('wallet/subscribe', [VendorSubscriptionController::class, 'subscribe']);
+        Route::post('wallet/change-package', [VendorSubscriptionController::class, 'changePackage']);
+        Route::get('wallet/subscriptions', [VendorSubscriptionController::class, 'subscriptions']);
+        Route::post('wallet/subscription/toggle-auto-renew', [VendorSubscriptionController::class, 'toggleAutoRenew']);
+        Route::post('wallet/subscription/disable-auto-renew', [VendorSubscriptionController::class, 'disableAutoRenew']);
+        Route::post('wallet/subscription/enable-auto-renew', [VendorSubscriptionController::class, 'enableAutoRenew']);
+        Route::post('wallet/subscription/cancel', [VendorSubscriptionController::class, 'cancelSubscription']);
 
         // Wallet Transfers (Vendors)
         Route::prefix('wallet/transfer')->group(function () {
@@ -164,6 +174,15 @@ Route::prefix('v1')->group(function () {
         });
         Route::get('wallet/transfers', [WalletTransferController::class, 'history']);
         Route::get('wallet/transfers/{id}', [WalletTransferController::class, 'show']);
+        
+        // Wallet Password (Vendors)
+        Route::prefix('wallet/password')->group(function () {
+            Route::get('status', [WalletPasswordController::class, 'status']);
+            Route::post('set', [WalletPasswordController::class, 'setPassword']);
+            Route::post('change', [WalletPasswordController::class, 'changePassword']);
+            Route::post('reset-otp', [WalletPasswordController::class, 'resetPasswordOtp']);
+            Route::post('reset', [WalletPasswordController::class, 'resetPassword']);
+        });
         
         // Wallet Charge Requests (Vendors)
         Route::prefix('wallet/charge-requests')->group(function () {

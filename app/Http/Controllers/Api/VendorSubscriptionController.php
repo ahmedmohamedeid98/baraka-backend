@@ -10,7 +10,7 @@ use App\Models\Transaction;
 use App\Models\VendorSubscription;
 use Illuminate\Http\Request;
 
-class VendorWalletController extends ApiController
+class VendorSubscriptionController extends ApiController
 {
     /**
      * Get vendor wallet

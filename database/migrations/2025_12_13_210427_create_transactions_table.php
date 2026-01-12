@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('vendor_wallet_id')->constrained('vendor_wallets')->onDelete('cascade');
             
             // Transaction type: charge, subscription, gift, commission, refund
-            $table->enum('type', ['charge', 'subscription', 'gift', 'commission', 'refund'])->default('charge');
+            $table->string('type');
             
             // Amount: positive for credit, negative for debit
             $table->decimal('amount', 12, 2);
